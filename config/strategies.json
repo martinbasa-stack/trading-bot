@@ -6,7 +6,7 @@
         "Symbol1": "BTC",
         "Symbol2": "USDC",
         "run": true,
-        "paperTrading": false,
+        "paperTrading": true,
         "candleCloseOnly": false,
         "CandleInterval": "4h",
         "NumOfCandlesForLookback": 12,
@@ -288,4 +288,5 @@
             }
         ]
     }
+
 ]
