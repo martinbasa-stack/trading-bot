@@ -1,0 +1,7 @@
+flask
+flask_simplelogin
+binance-sdk-spot
+numpy
+ta-lib
+fear-and-greed-crypto
+python-telegram-bot
