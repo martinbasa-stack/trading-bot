@@ -528,7 +528,7 @@ def _advanceDCA(strategySettings, BalanceSymbol1, BalanceSymbol2, LastPrice):
         strSaveValMin = f"{strategySettings["type"]}_{strategySettings["id"]}_{Pair}_min"
         if not (strSaveValMax in histStrategyVal): histStrategyVal[strSaveValMax] = LastPrice #create if it does not exist
         if not (strSaveValMin in histStrategyVal): histStrategyVal[strSaveValMin] = LastPrice #create if it does not exist        
-
+        if histStrategyVal[strSaveValMin] ==0: histStrategyVal[strSaveValMin] = LastPrice
         #my_histData = historyKlineData[Pair]["Intervals"][strategySettings["CandleInterval"]].copy()#np.genfromtxt(filePath, delimiter=",") #Create an array from csv
         timeStampClose = historyKlineData[Pair]["Intervals"][strategySettings["CandleInterval"]]["timeStampClose"]
         high =  historyKlineData[Pair]["Intervals"][strategySettings["CandleInterval"]]["high"]
@@ -582,12 +582,13 @@ def _advanceDCA(strategySettings, BalanceSymbol1, BalanceSymbol2, LastPrice):
             #Enable new trade if min time passed from last one
             newTradeEn = (timestamp_seconds - int(lastTrade[TRADE_TABLE_COL_TIMESTAMP]/1000)) > strategySettings["timeLimitNewOrder"]   
             
-            count = 0
+            count = 1
             for time in timeStampClose: #Go trough history candles from past to now        
                 #count untill candle time close is smaler than trade time count will be the new lookBack
-                if (int(time) < int(lastTrade[TRADE_TABLE_COL_TIMESTAMP])):
-                    count += 1 #count will point to the index of a candle wher trade happened          
-                
+                timeClose = int(time)
+                timeLastTrade = int(lastTrade[TRADE_TABLE_COL_TIMESTAMP])
+                if (timeClose < timeLastTrade):
+                    count += 1 #count will point to the index of a candle wher trade happened    
             #If count is max lenght then trade was in last candle
             lookBack = int(len(high)) - int(count)
         
