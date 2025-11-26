@@ -1,16 +1,17 @@
+from .settings import loadBsettings, loadStrSettings, saveBsettings, saveStrSettings
 from .binance_API import (
     my_balances,
     klinStreamdData,
     websocetCmds,
     streamCmds,
     activStreamList,
-    exchange_info_data,
     pingWebsocet,
     klineStream,
     websocetManage,
     fetch_exchange_info,
     disconnectAPI,
-    fetch_userData
+    fetch_userData,
+    read_exchange_info
     )
 from .strategy import (
     shutDown,
@@ -18,6 +19,5 @@ from .strategy import (
     tradeTablesView, 
     fearAndGreed,
     advanceDCAstatus)
-from .settings import loadBsettings, loadStrSettings, saveBsettings, saveStrSettings
 from .flaskRoute import bp, passToFlask
 

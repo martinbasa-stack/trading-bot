@@ -501,9 +501,6 @@ async def websocetManage(loopRuntime = 1):
             logger.error(f"websocetManage() Disconnecting due to error...")
         else:
             logger.info(f"websocetManage() Disconnect cmd was recived")
-            if basicSettings["useTelegram"]: #Write telegram message
-                telegramMsg = f"Bot shutting down"
-                await asyncio.wait_for(_telegramSend(telegramMsg), timeout=5)#Send telegram msg 
         event_websocetCmd.clear() #Block after released for response         
         if connection:                 
             await connection.close_connection(close_session=True)        
@@ -639,6 +636,13 @@ def fetch_exchange_info(): #only fetch one ce in lifetime then save to json
     except Exception as e:
         logger.error(f"fetch_userData() error: {e}")
 
+#Geting exchange info once in the life time
+def read_exchange_info(): #only fetch one ce in lifetime then save to json
+    if os.path.exists(FILE_PATH_EXCHANGE_INFO): #if file exists load from file else get from exchange
+        with open(FILE_PATH_EXCHANGE_INFO, "r") as jf: # save list of assets as JSON
+            exchange_info_data = json.load(jf)
+        return exchange_info_data
+
 #--send Trade to binance-----------------------------------------
 def sendTrade(openTrade):
     try: 
@@ -721,5 +725,4 @@ def sendTrade(openTrade):
     except Exception as e:
         logger.error(f"sendTrade() error: {e}")
         return None
-
 

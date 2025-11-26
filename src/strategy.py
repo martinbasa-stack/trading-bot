@@ -1,4 +1,4 @@
-from .binance_API import my_balances, klinStreamdData, exchange_info_data, sendTrade, fetch_userData, fetch_histData
+from .binance_API import my_balances, klinStreamdData, sendTrade, fetch_userData, fetch_histData, read_exchange_info
 from.constants import(
     LOG_PATH_STRATEGY,
     FILE_PATH_HIST_STRATEGY,
@@ -423,6 +423,7 @@ def _assetManager(strategySettings, BalanceSymbol1, BalanceSymbol2, dynFactorBuy
     #check for minumim from exchange
     minBuy = strategySettings["BuyMin"]
     minSell = strategySettings["SellMin"]
+    exchange_info_data = read_exchange_info()
     if len(exchange_info_data):
         Pair = f"{strategySettings["Symbol1"]}{strategySettings["Symbol2"]}"
         if Pair in exchange_info_data:

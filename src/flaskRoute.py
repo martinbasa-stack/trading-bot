@@ -8,7 +8,7 @@ from .constants import (
 from .binance_API import ( 
     my_balances,
     activStreamList,
-    exchange_info_data
+    read_exchange_info
 )
 from .strategy import ( 
     tradeTablesView,
@@ -165,7 +165,8 @@ def strategySettings_html():
             #Check if symbol pair exists
             Pair = request.form.get("Symbol1") + request.form.get("Symbol2")
             PairOK= True
-            if len(exchange_info_data) > 2:
+            exchange_info_data = read_exchange_info()
+            if len(exchange_info_data) > 0:
                 if not Pair in exchange_info_data:
                     usrMsg = "ERROR no such pair traiding on exchange!"
                     PairOK = False
@@ -304,6 +305,7 @@ def BasicSettings():
     usrMsg=""
     data = ""
     basicSettings = loadBsettings()
+    exchange_info_data = read_exchange_info()
     if request.method == 'POST' and request.form:      
         if "SAVE" == request.form.get("ActionButton"):
             basicSettings["histDataUpdate"] = int(request.form.get("histDataUpdate")) 
