@@ -85,11 +85,11 @@ def _getTelegramTOKEN():
     try:
         #Get keys from inviroment if not defined
         if "telegram_TOKEN" in basicSettings["telegram_TOKEN"]:
-            telegram_token = os.environ.get("telegram_TOKEN")
+            telegram_token = os.environ.get("TELEGRAM_TOKEN")
         else:
             telegram_token = basicSettings["telegram_TOKEN"]
         if "telegram_chatID" in basicSettings["telegram_chatID"]:
-            telegram_chatID = os.environ.get("telegram_chatID")
+            telegram_chatID = os.environ.get("TELEGRAM_CHATID")
         else:
             telegram_chatID = basicSettings["telegram_chatID"]
         return telegram_token, telegram_chatID
@@ -721,4 +721,5 @@ def sendTrade(openTrade):
     except Exception as e:
         logger.error(f"sendTrade() error: {e}")
         return None
+
 
