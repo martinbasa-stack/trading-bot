@@ -1,0 +1,34 @@
+2025-11-26 12:50:22,770 - __main__ - INFO - RUN_flaskApp() New thread Start
+2025-11-26 12:50:22,771 - __main__ - INFO - RUN_StreamLoop() New thread Start
+2025-11-26 12:50:22,771 - __main__ - INFO - RUN_WebsocetLoop() New thread Start
+2025-11-26 12:50:22,772 - __main__ - INFO - initialize() write data, wait for threads run,...
+2025-11-26 12:50:22,773 - __main__ - INFO - RUN_StreamLoop() Started
+2025-11-26 12:50:22,773 - __main__ - INFO - RUN_WebsocetLoop() Started
+2025-11-26 12:50:29,779 - __main__ - INFO - Get exchange info
+2025-11-26 12:50:30,792 - __main__ - INFO - initialize() Read user data
+2025-11-26 12:50:31,055 - __main__ - INFO - First run delay start
+2025-11-26 12:50:44,223 - __main__ - WARNING - RUN_StreamLoop(): cancelling 0 pending tasks
+2025-11-26 12:50:44,223 - __main__ - INFO - RUN_StreamLoop() Thread Stopped
+2025-11-26 12:50:45,461 - __main__ - WARNING - RUN_WebsocetLoop(): cancelling 1 pending tasks
+2025-11-26 12:50:45,461 - __main__ - INFO - RUN_WebsocetLoop() Thread Stopped
+2025-11-26 12:50:45,462 - __main__ - WARNING - Performing cleanup operations before exiting...
+2025-11-26 12:53:15,118 - __main__ - INFO - RUN_flaskApp() New thread Start
+2025-11-26 12:53:15,119 - __main__ - INFO - RUN_WebsocetLoop() New thread Start
+2025-11-26 12:53:15,119 - __main__ - INFO - initialize() write data, wait for threads run,...
+2025-11-26 12:53:15,119 - __main__ - INFO - RUN_StreamLoop() New thread Start
+2025-11-26 12:53:15,121 - __main__ - INFO - RUN_StreamLoop() Started
+2025-11-26 12:53:15,121 - __main__ - INFO - RUN_WebsocetLoop() Started
+2025-11-26 12:53:20,523 - __main__ - WARNING - Performing cleanup operations before exiting...
+2025-11-26 12:53:21,493 - __main__ - WARNING - RUN_StreamLoop(): cancelling 0 pending tasks
+2025-11-26 12:53:21,493 - __main__ - INFO - RUN_StreamLoop() Thread Stopped
+2025-11-26 12:53:22,699 - __main__ - WARNING - RUN_WebsocetLoop(): cancelling 1 pending tasks
+2025-11-26 12:53:22,699 - __main__ - INFO - RUN_WebsocetLoop() Thread Stopped
+2025-11-26 12:58:27,544 - __main__ - INFO - RUN_flaskApp() New thread Start
+2025-11-26 12:58:27,544 - __main__ - INFO - RUN_StreamLoop() New thread Start
+2025-11-26 12:58:27,545 - __main__ - INFO - RUN_WebsocetLoop() New thread Start
+2025-11-26 12:58:27,545 - __main__ - INFO - initialize() write data, wait for threads run,...
+2025-11-26 12:58:27,545 - __main__ - INFO - RUN_StreamLoop() Started
+2025-11-26 12:58:27,546 - __main__ - INFO - RUN_WebsocetLoop() Started
+2025-11-26 12:58:34,551 - __main__ - INFO - Get exchange info
+2025-11-26 12:58:35,580 - __main__ - INFO - initialize() Read user data
+2025-11-26 12:58:36,473 - __main__ - INFO - First run delay start
