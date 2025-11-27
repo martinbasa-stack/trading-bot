@@ -754,7 +754,7 @@ def _advanceDCA(strategySettings, BalanceSymbol1, BalanceSymbol2, LastPrice):
                         commission_asset        #13
                         ]
                 my_tradeData.append(trade)
-                localTradeTables[strategySettings["id"]]["PaperTrades"] = my_tradeData
+                localTradeTables[strategySettings["id"]]["Trades"] = my_tradeData
                 #TradeSaveTocsv(filePath, trade)
                 #Block double trades
                 newTradeEn = False
@@ -788,7 +788,7 @@ def _advanceDCA(strategySettings, BalanceSymbol1, BalanceSymbol2, LastPrice):
                         commission_asset
                         ]
                 my_tradeData.append(trade)
-                localTradeTables[strategySettings["id"]]["PaperTrades"] = my_tradeData
+                localTradeTables[strategySettings["id"]]["Trades"] = my_tradeData
                 #TradeSaveTocsv(filePath, trade)
                 #Block double trades
                 newTradeEn = False
@@ -1246,5 +1246,6 @@ def init():
     _gefFearAndGread() 
     _tradeTableManagment(strategy_settings)
     _manageHistKlineData(strategy_settings)
+
 
 init()
