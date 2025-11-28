@@ -93,6 +93,7 @@
     }
     a.navbutton {
         padding: 5px 10px;
+        min-width: 100px;
         align-self: start; /* or center, end */
         justify-self: center; /* or center, end */
         text-wrap: wrap;
@@ -102,6 +103,7 @@
         text-decoration: none;
         font-size: small;
         cursor:pointer;
+        border-radius: 50px 15px 5px 40px;
         transition: background-color 0.4s ease-in-out, transform 0.4s ease-in-out;
     }    
     a.navbutton:hover {
