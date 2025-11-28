@@ -1,4 +1,4 @@
-from .settings import loadBsettings, loadStrSettings, saveBsettings, saveStrSettings
+from .settings import settings_class, strategies_class
 from .binance_API import (
     my_balances,
     klinStreamdData,
@@ -16,8 +16,6 @@ from .binance_API import (
 from .strategy import (
     shutDown,
     strategyRun,
-    tradeTablesView, 
-    fearAndGreed,
     advanceDCAstatus)
-from .flaskRoute import bp, passToFlask
+from .flask.routes import bp, passToFlask
 

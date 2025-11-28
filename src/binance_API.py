@@ -1,4 +1,5 @@
-from .settings import loadBsettings, loadStrSettings
+from .settings import settings_class, strategies_class
+from .trades import Trade
 from .constants import(
     LOG_PATH_BINANCE_API,
     FILE_PATH_EXCHANGE_INFO,
@@ -22,6 +23,7 @@ import asyncio
 import os
 import csv
 import json
+import copy
 from datetime import datetime, timezone
 
 from binance_sdk_spot.spot import (
@@ -31,7 +33,7 @@ from binance_sdk_spot.spot import (
     ConfigurationWebSocketStreams
     )
 from binance_common.constants import WebsocketMode
-from binance_sdk_spot.websocket_api.models import KlinesIntervalEnum,ExchangeInfoSymbolStatusEnum
+from binance_sdk_spot.websocket_api.models import KlinesIntervalEnum,ExchangeInfoSymbolStatusEnum, OrderPlaceResponseResult
 from binance_sdk_spot.websocket_streams.models import KlineIntervalEnum
 from telegram import Bot
 
@@ -45,8 +47,6 @@ file_handler = logging.FileHandler(LOG_PATH_BINANCE_API)
 formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
-
-basicSettings = loadBsettings()
 
 my_balances = {}
 #Threding variables for Websocet
@@ -83,16 +83,15 @@ async def _telegramSend(text):
 #Get Telegram TOKEN and chatID from file or enviroment
 def _getTelegramTOKEN():
     try:
-        #Get keys from inviroment if not defined
-        if "telegram_TOKEN" in basicSettings["telegram_TOKEN"]:
+        #Get keys from inviroment variables if not defined
+        telegram_token = settings_class.get("telegram_TOKEN")
+        telegram_chat_id = settings_class.get("telegram_chatID")
+        if "telegram_TOKEN" in telegram_token:
             telegram_token = os.environ.get("TELEGRAM_TOKEN")
-        else:
-            telegram_token = basicSettings["telegram_TOKEN"]
-        if "telegram_chatID" in basicSettings["telegram_chatID"]:
-            telegram_chatID = os.environ.get("TELEGRAM_CHATID")
-        else:
-            telegram_chatID = basicSettings["telegram_chatID"]
-        return telegram_token, telegram_chatID
+        if "telegram_chatID" in telegram_chat_id:
+            telegram_chat_id = os.environ.get("TELEGRAM_CHATID")
+
+        return telegram_token, telegram_chat_id
     except Exception as e:
         logger.error(f"_getTelegramTOKEN() error: {e}")
 
@@ -100,14 +99,13 @@ def _getTelegramTOKEN():
 def _getAPI():
     try:
         #Get keys from inviroment if not defined
-        if "API_KEY" in basicSettings["API_KEY"]:
+        api_key = settings_class.get("API_KEY")
+        api_secret = settings_class.get("API_SECRET")
+        if "API_KEY" in api_key:
             api_key = os.environ.get("BINANCE_API_KEY")
-        else:
-            api_key = basicSettings["API_KEY"]
-        if "API_SECRET" in basicSettings["API_SECRET"]:
+        if "API_SECRET" in api_secret:
             api_secret = os.environ.get("BINANCE_API_SECRET")
-        else:
-            api_secret = basicSettings["API_SECRET"]
+
         return api_key, api_secret
     except Exception as e:
         logger.error(f"getAPI() error: {e}")
@@ -128,7 +126,7 @@ async def klineStream(loopRuntime = 5, maxNoData = 10, initialIntervalIndex = 1)
     # Create configuration for the WebSocket Streams
     configuration_ws_streams = ConfigurationWebSocketStreams(
         stream_url=os.getenv("STREAM_URL", SPOT_WS_STREAMS_PROD_URL),
-        reconnect_delay=basicSettings["reconnect_delay"],
+        reconnect_delay=settings_class.get("reconnect_delay"),
         mode= WebsocketMode.SINGLE,
         pool_size=1 #If more tha 1 there are problems with reconnectiong because it does not close the task
         )
@@ -165,23 +163,22 @@ async def klineStream(loopRuntime = 5, maxNoData = 10, initialIntervalIndex = 1)
             now_utc = datetime.now(timezone.utc)
             timestamp_seconds = int(now_utc.timestamp())              
             #create a list of requested streams depending of settings
-            strategySettings = loadStrSettings() #Load setrategy settings
             requestedStreamList = {} 
-            for Strategy in strategySettings: #run trough all the stratagies
-                Pair = f"{Strategy["Symbol1"]}{Strategy["Symbol2"]}"
-                if Pair not in requestedStreamList: #add only if unique
-                    requestedStreamList[Pair] = interval #all streams will be 15min do not se the neeed to change this
+            for strategy in strategies_class.get_all(): #run trough all the stratagies
+                pair = f"{strategy["Symbol1"]}{strategy["Symbol2"]}"
+                if pair not in requestedStreamList: #add only if unique
+                    requestedStreamList[pair] = interval #interval is not important
             #Subscribe to requested streams if not subscribed
-            for Pair in requestedStreamList:                
-                if not Pair in activStreamList: #If not in active stream list start a stream and add to the list   
+            for pair in requestedStreamList:                
+                if not pair in activStreamList: #If not in active stream list start a stream and add to the list   
                     stream = None
                     stream = await connectionStream.kline( 
-                        symbol=Pair,
+                        symbol=pair,
                         interval=KlineIntervalEnum[f"INTERVAL_{interval}"].value,
                     ) 
                     stream.on("message", lambda data: _saveStreamdata(data)) 
-                    activStreamList[Pair] = requestedStreamList[Pair]
-                    logger.info(f"kLineStream() Subscribe to stream for: {Pair} with interval = {requestedStreamList[Pair]}")
+                    activStreamList[pair] = requestedStreamList[pair]
+                    logger.info(f"kLineStream() Subscribe to stream for: {pair} with interval = {requestedStreamList[pair]}")
                     del stream
             
 
@@ -213,7 +210,7 @@ async def klineStream(loopRuntime = 5, maxNoData = 10, initialIntervalIndex = 1)
                     countNoData = 0             
             
             # Periodically verify server-side subscription list to detect mismatch
-            if (timestamp_seconds - timePing) > int(basicSettings["pingUpdate"] *60) and not firstRun : # check time last ping
+            if (timestamp_seconds - timePing) > int(settings_class.get("pingUpdate") *60) and not firstRun : # check time last ping
                 timePing = timestamp_seconds
                 try:
                     allSubs = await connectionStream.list_subscribe()
@@ -264,7 +261,7 @@ async def klineStream(loopRuntime = 5, maxNoData = 10, initialIntervalIndex = 1)
             await asyncio.sleep(loopRuntime)
     except Exception as e:
         logger.error(f"kLineStream() Connection lost or error: {e}")
-        if basicSettings["useTelegram"]: #Write telegram message
+        if settings_class.get("useTelegram"): #Write telegram message
             telegramMsg = f"kLineStream() Connection lost or error: {e}"
             await asyncio.wait_for(_telegramSend(telegramMsg), timeout=5)#Send telegram msg 
 
@@ -322,12 +319,13 @@ async def websocetManage(loopRuntime = 1):
     connection = None
     errorCount=0
     api_key, api_secret = _getAPI()
+    use_telegram = settings_class.get("useTelegram")
     # Create configuration for the WebSocket API
     configuration_ws_api = ConfigurationWebSocketAPI(
         api_key = api_key,
         api_secret = api_secret,
-        timeout= basicSettings["timeout"],
-        reconnect_delay=basicSettings["reconnect_delay"],
+        timeout= settings_class.get("timeout"),
+        reconnect_delay=settings_class.get("reconnect_delay"),
         mode= WebsocketMode.SINGLE,
         pool_size=1
         )
@@ -345,7 +343,7 @@ async def websocetManage(loopRuntime = 1):
         # Establish connection to API
         if connection == None:
             connection = await client.websocket_api.create_connection() # connect to binance
-        if basicSettings["useTelegram"]:
+        if use_telegram:
             await asyncio.wait_for(_telegramSend("Bot connected to API"), timeout=10)
 
         firstRun = True 
@@ -418,7 +416,7 @@ async def websocetManage(loopRuntime = 1):
                                 errorCount +=1  
                         case "trade":
                             try:
-                                if basicSettings["useTelegram"]: #Write telegram message
+                                if use_telegram: #Write telegram message
                                     telegramMsg = websocetCmds["TelegramMsg"]
                                     await asyncio.wait_for(_telegramSend(telegramMsg), timeout=10)#Send telegram msg    
                                 if websocetCmds["data"]["quantity"] > 0:
@@ -441,7 +439,7 @@ async def websocetManage(loopRuntime = 1):
                                 websocetCmds["return"] = responseData
                                 logger.info(f"websocetManage() order posted succesfuly on {responseData.result.symbol} "
                                             f"with id = {responseData.result.client_order_id} | status = {responseData.result.status}")  
-                                if basicSettings["useTelegram"]: #Write telegram message
+                                if use_telegram: #Write telegram message
                                     commission = 0.0
                                     commission_asset = "BNB"
                                     for part in responseData.result.fills: #go trough filled data for commision calculation 
@@ -461,7 +459,7 @@ async def websocetManage(loopRuntime = 1):
                             except Exception as e:                                
                                 logger.error(f"websocetManage() Connection error: order_place() {e}")
                                 websocetCmds["return"] = "error"
-                                if basicSettings["useTelegram"]: #Write telegram message
+                                if use_telegram: #Write telegram message
                                     telegramMsg = f"websocetManage() Connection error: order_place() {e}"
                                     await asyncio.wait_for(_telegramSend(telegramMsg), timeout=5)#Send telegram msg    
                                 errorCount +=1                          
@@ -490,7 +488,7 @@ async def websocetManage(loopRuntime = 1):
             websocetCmds["cmd"] = "error"       
             websocetCmds["return"] = "error"
         logger.error(f"websocetManage() Connection lost or an error: {e}")        
-        if basicSettings["useTelegram"]: #Write telegram message
+        if use_telegram: #Write telegram message
             telegramMsg = f"websocetManage() Connection lost or an error: {e}"
             await asyncio.wait_for(_telegramSend(telegramMsg), timeout=5)#Send telegram msg 
     finally:     
@@ -644,44 +642,16 @@ def read_exchange_info(): #only fetch one ce in lifetime then save to json
         return exchange_info_data
 
 #--send Trade to binance-----------------------------------------
-def sendTrade(openTrade):
+def sendTrade(open_trade: Trade) -> Trade:
     try: 
         if not websocetCmds["connected"]: #Check for connection
             logger.error(f"sendTrade() no connection")
             return None   
 
-        #prepare data to Send TRADE to API
-        tradePair =  f"{openTrade[TRADE_TABLE_COL_SYMBOL_1]}{openTrade[TRADE_TABLE_COL_SYMBOL_2]}" #Get trading simbols row 2 and row 4                        
-        roundnumQ = 5 #Get precision
-        if len(exchange_info_data)>0:
-            if tradePair in exchange_info_data:
-                roundnumQ = exchange_info_data[tradePair]["order_precision"]
-
-        if float(openTrade[TRADE_TABLE_COL_ASSET_S1_QT]) < 0.0:
-            side="SELL"
-            quote_order_qty= 0
-            quantity = round(abs(float(openTrade[TRADE_TABLE_COL_ASSET_S1_QT])), roundnumQ) #When selling I want to sell the amount of Symbol1 I will recive Symbol2 depending on the market                        
-        else:
-            side="BUY"
-            quote_order_qty= round(abs(float(openTrade[TRADE_TABLE_COL_ASSET_S2_QT])), roundnumQ)#When buying spend amount of symbol2 and recive amount of symbol1 depending on market
-            quantity= 0
-        telegramMsg = ("New order send to Binance \n "
-                        f"send at time : {datetime.fromtimestamp(int(openTrade[TRADE_TABLE_COL_TIMESTAMP]/1000))} \n "
-                        f"side : {side} \n "
-                        f"trading pair : {tradePair} \n "
-                        f"quantity = {round(openTrade[TRADE_TABLE_COL_ASSET_S1_QT],roundnumQ)} of {openTrade[TRADE_TABLE_COL_SYMBOL_1]} \n "
-                        f"quantity = {round(openTrade[TRADE_TABLE_COL_ASSET_S2_QT],roundnumQ)} of {openTrade[TRADE_TABLE_COL_SYMBOL_2]} \n "
-                        f"at price = {abs(openTrade[TRADE_TABLE_COL_PRICE])} {openTrade[TRADE_TABLE_COL_SYMBOL_2]} \n "
-                        )
+        telegramMsg, websocet_msg = _format_order_place_msg(open_trade)
+        
         with lock_websocetCmds: #Lock to send command and data
-            websocetCmds["data"] = {
-                "side" : side,
-                "symbol" : tradePair,
-                "quote_order_qty" : quote_order_qty,
-                "quantity" : quantity,
-                "symbol1" : openTrade[TRADE_TABLE_COL_SYMBOL_1],
-                "symbol2" : openTrade[TRADE_TABLE_COL_SYMBOL_2],
-            }
+            websocetCmds["data"] = websocet_msg
             websocetCmds["cmd"] = "trade"
             websocetCmds["TelegramMsg"] = telegramMsg
         logger.info(f"sendTrade() send order: {websocetCmds["data"]}")
@@ -689,40 +659,77 @@ def sendTrade(openTrade):
         event_websocetCmd.wait()#wait for result  
         with lock_websocetCmds:                    
             if "error" in websocetCmds["return"]:
-                logger.error(f"sendTrade() error {websocetCmds["return"]} for {side} trade on {tradePair}")                
+                logger.error(f"sendTrade() error {websocetCmds["return"]}")                
                 return None        
             if "return" in websocetCmds["return"]:
-                logger.error(f"sendTrade() for {side} trade on {tradePair} no data recived")
+                logger.error(f"sendTrade() no data recived")
                 return None
             tradeData = websocetCmds["return"] # copy data
 
-        tradeDataRecived = tradeData.result #Save data localy befor calling user data update
-        logger.info(f"sendTrade() recive order data: {tradeDataRecived}")
+        response_result: OrderPlaceResponseResult = tradeData.result #Save data localy befor calling user data update
+        logger.info(f"sendTrade() recive order data: {response_result}")
         fetch_userData()
-        if tradeDataRecived.status == "FILLED": #If filled update and return the trade order 
-            openTradeRecive = openTrade.copy()
-            openTradeRecive[TRADE_TABLE_COL_TIMESTAMP] = tradeDataRecived.transact_time
-            openTradeRecive[TRADE_TABLE_COL_ID] = tradeDataRecived.client_order_id
-            if float(openTrade[TRADE_TABLE_COL_ASSET_S1_QT]) > 0.0: #if buy then write positive values
-                openTradeRecive[TRADE_TABLE_COL_ASSET_S1_QT] = float(tradeDataRecived.executed_qty)
-                openTradeRecive[TRADE_TABLE_COL_ASSET_S2_QT] = -float(tradeDataRecived.cummulative_quote_qty)
-            else:
-                openTradeRecive[TRADE_TABLE_COL_ASSET_S1_QT] = -float(tradeDataRecived.executed_qty)
-                openTradeRecive[TRADE_TABLE_COL_ASSET_S2_QT] = float(tradeDataRecived.cummulative_quote_qty)
-            price = round(float(tradeDataRecived.cummulative_quote_qty)/  float(tradeDataRecived.executed_qty), 8)                                                     
-            commission = 0.0
-            commission_asset = "BNB"
-            for part in tradeDataRecived.fills: #go trough filled data for commision calculation 
-                commission += float(part.commission)
-                commission_asset = part.commission_asset   
-            openTradeRecive[TRADE_TABLE_COL_PRICE] = price #Calculated price maybe we can calculated out of every fill but dont think it is necesary
-            openTradeRecive[TRADE_TABLE_COL_COMMISION] = commission
-            openTradeRecive[TRADE_TABLE_COL_COMMISION_ASSET] = commission_asset           
-             
-            return openTradeRecive
-        
+        if response_result.status == "FILLED": #If filled update and return the trade order 
+            trade_closed = _format_order_response_data(response_result, open_trade)
+            return trade_closed
 
     except Exception as e:
         logger.error(f"sendTrade() error: {e}")
         return None
 
+#prepare data to Send TRADE to API
+def _format_order_place_msg(trade:Trade):
+    pair =  f"{trade.symbol1}{trade.symbol2}" #Get trading simbols row 2 and row 4                        
+    roundnumQ = 5 #Get precision
+    if exchange_info_data:
+        if pair in exchange_info_data:
+            roundnumQ = exchange_info_data[pair]["order_precision"]
+
+    if float(trade.quantity1) < 0.0:
+        side="SELL"
+        quote_order_qty= 0
+        quantity = round(abs(float(trade.quantity1)), roundnumQ) #When selling I want to sell the amount of Symbol1 I will recive Symbol2 depending on the market                        
+    else:
+        side="BUY"
+        quote_order_qty= round(abs(float(trade.quantity2)), roundnumQ)#When buying spend amount of symbol2 and recive amount of symbol1 depending on market
+        quantity= 0
+    telegramMsg = ("New order send to Binance \n "
+                    f"send at time : {datetime.fromtimestamp(int(trade.timestamp/1000))} \n "
+                    f"side : {side} \n "
+                    f"trading pair : {pair} \n "
+                    f"quantity = {round(trade.quantity1,roundnumQ)} of {trade.symbol1} \n "
+                    f"quantity = {round(trade.quantity2,roundnumQ)} of {trade.symbol2} \n "
+                    f"at price = {abs(trade.price)} {trade.symbol2} \n "
+                    )
+    websocet_msg = {
+                "side" : side,
+                "symbol" : pair,
+                "quote_order_qty" : quote_order_qty,
+                "quantity" : quantity,
+                "symbol1" : trade.symbol1,
+                "symbol2" : trade.symbol2,
+            }
+    return telegramMsg, websocet_msg
+
+#Format trade data after reciving response "FILLED"
+def _format_order_response_data(response_result : OrderPlaceResponseResult, open_trade: Trade) ->Trade:
+    trade:Trade = copy.deepcopy(open_trade)
+    trade.timestamp = response_result.transact_time
+    trade.idx = response_result.client_order_id
+    if float(trade.quantity1) > 0.0: #if buy then write positive values
+        trade.quantity1 = float(response_result.executed_qty)
+        trade.quantity2 = -float(response_result.cummulative_quote_qty)
+    else:
+        trade.quantity1 = -float(response_result.executed_qty)
+        trade.quantity2 = float(response_result.cummulative_quote_qty)
+    price = round(float(response_result.cummulative_quote_qty)/  float(response_result.executed_qty), 8)                                                     
+    commission = 0.0
+    commission_asset = "BNB"
+    for part in response_result.fills: #go trough filled data for commision calculation 
+        commission += float(part.commission)
+        commission_asset = part.commission_asset   
+    trade.price = price #Calculated price maybe we can calculated out of every fill but dont think it is necesary
+    trade.commision = commission
+    trade.commision_symbol = commission_asset        
+        
+    return trade

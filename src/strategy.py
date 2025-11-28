@@ -1,44 +1,20 @@
-from .binance_API import my_balances, klinStreamdData, sendTrade, fetch_userData, fetch_histData, read_exchange_info
 from.constants import(
     LOG_PATH_STRATEGY,
     FILE_PATH_HIST_STRATEGY,
-    FILE_PATH_FEAR_GREAD,
-    INDICATOR_INTERVAL_LIST,
-    TRADE_TABLE_COL_TIMESTAMP,
-    TRADE_TABLE_COL_ID,
-    TRADE_TABLE_COL_SYMBOL_1,
-    TRADE_TABLE_COL_ASSET_S1_QT,
-    TRADE_TABLE_COL_SYMBOL_2,
-    TRADE_TABLE_COL_ASSET_S2_QT,
-    TRADE_TABLE_COL_PRICE,
-    TRADE_TABLE_COL_MAX,
-    TRADE_TABLE_COL_MIN,
-    TRADE_TABLE_COL_LOOKBACK,
-    TRADE_TABLE_COL_AVG_COST,
-    TRADE_TABLE_COL_CHANGE,
-    TRADE_TABLE_COL_COMMISION,
-    TRADE_TABLE_COL_COMMISION_ASSET,    
-    KLINE_TABLE_COL_TIMESTAMP_OPEN,
-    KLINE_TABLE_COL_OPEN,
-    KLINE_TABLE_COL_HIGH,
-    KLINE_TABLE_COL_LOW,
-    KLINE_TABLE_COL_CLOSE,
-    KLINE_TABLE_COL_VOLUME_S1,
-    KLINE_TABLE_COL_TIMESTAMP_CLOSE,
-    KLINE_TABLE_COL_VOLUME_S2
+    FILE_PATH_FEAR_GREAD
 )
-from .settings import loadBsettings,loadStrSettings
+from .binance_API import my_balances, klinStreamdData, sendTrade, fetch_userData, fetch_histData, read_exchange_info
+from .settings import settings_class, strategies_class
+from .history import history_class, PairHistory, IntervalData
+from .trades import trade_manager_class, Trade, TradeTable
+from .record_high_low.highlow import HighLowManager
+from .fear_gread.fear_gread import FearAndGread
 
 import logging
-import os
 from datetime import datetime, timezone
-import csv
-import json
 
 import numpy as np
 import talib as ta
-from fear_and_greed import FearAndGreedIndex
-
 
 #get current time data
 now_utc = datetime.now(timezone.utc)
@@ -56,114 +32,28 @@ file_handler.setFormatter(formatter)
 logger.addHandler(file_handler)
 
 #Globals
-timeHistFetch = timestamp_seconds
-
-#Only dictionary is passed normaly with from .x import
-histStrategyVal = {}
-historyKlineData = {} #Whole kLine data recived is keept here
-localTradeTables = {}
-tradeTablesView= {} 
 advanceDCAstatus= {}
-fearAndGreed={}
+#Create object to storr all history data and high low records
+record =  HighLowManager(path=FILE_PATH_HIST_STRATEGY, get_list_of_id_pair_func=strategies_class.id_pair_list)
+fear_gread = FearAndGread(path=FILE_PATH_FEAR_GREAD)
 
-#Save at shut down and load at start histStrategyVal to a file
-def _load_histStrategyVal():
-    global histStrategyVal
-    if not os.path.exists(FILE_PATH_HIST_STRATEGY):
-        return
-    with open(FILE_PATH_HIST_STRATEGY, "r") as jf: # save list of assets as JSON
-        histStrategyVal = json.load(jf)        
-    logger.debug("load_histStrategyVal done")
-
-def _save_histStrategyVal():
-    global histStrategyVal
-    with open(FILE_PATH_HIST_STRATEGY, "w") as jf: # save list of assets as JSON
-        json.dump(histStrategyVal, jf, ensure_ascii=False, indent=4)   
-    logger.debug(f"save_histStrategyVal done {histStrategyVal}")
-
-def _gefFearAndGread():
+def _calcIndicators(side, strategySettings, activeStrategyData, avarageCost, avarageEntry, avarageExit, LastPrice :float, history_pair: PairHistory, fear_gread: int):
     try:
-        global fearAndGreed    #save it to global for acces in strategy
-        now_utc = datetime.now(timezone.utc)
-        timestamp_seconds = int(now_utc.timestamp())  
-        timeNewDataAvailable= 0 
-        if os.path.exists(FILE_PATH_FEAR_GREAD):        
-            with open(FILE_PATH_FEAR_GREAD, "r") as jf: # open load from JSON
-                fearAndGreed = json.load(jf)
-        if len(fearAndGreed):
-            #Check if data is old
-            timeNewDataAvailable= int(fearAndGreed["timestamp"]) + int(fearAndGreed["time_until_update"]) +60 #Write when new data will be available plus 60s
-        if timestamp_seconds > timeNewDataAvailable:    #Get new data from server and save it
-            # Create an instance of the FearAndGreedIndex
-            fng_index = FearAndGreedIndex()
-            #Get complete current data (value, classification, timestamp)
-            fearAndGreed = fng_index.get_current_data()
-            fearAndGreed["timestamp"] = timestamp_seconds
-            with open(FILE_PATH_FEAR_GREAD, "w") as jf: # save  as JSON
-                json.dump(fearAndGreed, jf, ensure_ascii=False, indent=4)   
-            logger.debug(f"gefFearAndGread() Data: {fearAndGreed}")
-    except Exception as e:
-        logger.error(f"gefFearAndGread() error: {e}")
-
-def _creatTradeTablesView():
-    try:       
-        global tradeTablesView      
-        tradeTablesView.clear() #Cleare the whole table before creating
-
-        for idKey in list(localTradeTables.keys()):
-            if localTradeTables[idKey]["PaperTrading"]:  
-                tradeTable = localTradeTables[idKey]["PaperTrades"]
-            else:
-                tradeTable = localTradeTables[idKey]["Trades"]
-
-            tradeDatanew = []
-            if tradeTable != None:
-                reversed_arr  = tradeTable[::-1]#Reorder from new to old new at the top
-                for i in reversed_arr:   # Formating of timestamp and converting all to string since it is only for display
-                    tempTupple = (
-                    str(datetime.fromtimestamp(int(i[TRADE_TABLE_COL_TIMESTAMP]/1000))), 
-                    str(i[TRADE_TABLE_COL_ID]),
-                    str(i[TRADE_TABLE_COL_SYMBOL_1]),
-                    str(i[TRADE_TABLE_COL_ASSET_S1_QT]),
-                    str(i[TRADE_TABLE_COL_SYMBOL_2]),
-                    str(i[TRADE_TABLE_COL_ASSET_S2_QT]),
-                    str(i[TRADE_TABLE_COL_PRICE]),
-                    str(round(i[TRADE_TABLE_COL_CHANGE],2)),
-                    str(i[TRADE_TABLE_COL_COMMISION]),
-                    str(i[TRADE_TABLE_COL_COMMISION_ASSET])
-                    )       
-                    tradeDatanew.append(tempTupple)  
-
-                tradeTablesView[idKey] = {} # initiate / if exist it will cleare the strategy trade data
-                #Fill base data
-                tradeTablesView[idKey]["Symbol1"] = localTradeTables[idKey]["Symbol1"]
-                tradeTablesView[idKey]["Symbol2"] = localTradeTables[idKey]["Symbol2"]
-                tradeTablesView[idKey]["CandleInterval"] = localTradeTables[idKey]["CandleInterval"]
-                tradeTablesView[idKey]["type"] = localTradeTables[idKey]["type"]
-                tradeTablesView[idKey]["paperTrading"] = localTradeTables[idKey]["PaperTrading"]
-                tradeTablesView[idKey]["name"] = f"{localTradeTables[idKey]["name"]}_{localTradeTables[idKey]["Symbol1"]}_{localTradeTables[idKey]["Symbol2"]}"
-                tradeTablesView[idKey]["trades"] = tradeDatanew       
-
-    except Exception as e:
-        logger.error(f"_creatTradeTablesView() error: {e}")
-
-def _calcIndicators(side, strategySettings, activeStrategyData, avarageCost, avarageEntry, avarageExit, LastPrice):
-    try:
-        if len(strategySettings[f"Dynamic{side}"]) ==0:
-            return True, 0,0, activeStrategyData
+        if not strategySettings[f"Dynamic{side}"]:
+            return True, 0, activeStrategyData
         if not strategySettings[f"Dynamic{side}"][0]:
-            return True, 0,0, activeStrategyData
+            return True, 0, activeStrategyData
         cumWeight = 0
         sumFactor = 0.0
         valToCompare = 0.0
         activeStrategyData[side] = {} #Create a data set
-        Pair = f"{strategySettings["Symbol1"]}{strategySettings["Symbol2"]}"
+        pair = f"{strategySettings["Symbol1"]}{strategySettings["Symbol2"]}"
         for index, dynSet in enumerate(strategySettings[f"Dynamic{side}"]):  
             interval = dynSet["Interval"]
             indValue = dynSet["Value"]
-            close = historyKlineData[Pair]["Intervals"][interval]["close"]
-            low = historyKlineData[Pair]["Intervals"][interval]["low"]
-            high = historyKlineData[Pair]["Intervals"][interval]["high"]
+            close = history_pair.intervals[interval].close
+            low = history_pair.intervals[interval].low
+            high = history_pair.intervals[interval].high
             IndexWeight = 0
             dividerForChange = 0 #for factor calc for index with positive limit range likr RSI
             triggOffset = 0
@@ -261,7 +151,7 @@ def _calcIndicators(side, strategySettings, activeStrategyData, avarageCost, ava
                     indValue = 0
 
                 case s if "F&G" in s: #Feart and gread index
-                    valToCompare = float(fearAndGreed["value"]) 
+                    valToCompare = float(fear_gread) 
                     triggVal = dynSet["Trigger"]
                     dividerForChange = 100
                     textDisplay = f"Fear & Fread | Trigger"
@@ -439,14 +329,14 @@ def _assetManager(strategySettings, BalanceSymbol1, BalanceSymbol2, dynFactorBuy
     #print(f"toBuy {toBuy}, S2balanceOK {S2balanceOK}, toSell {toSell}, S1balanceOK {S1balanceOK}")
     return toBuy, S2balanceOK, toSell, S1balanceOK, AvailableS2Assets, AvailableS1Assets
 
-def _avgCost_pnl(LastPrice, tradeTable):
+def _avgCost_pnl(last_close, trade_table: list[Trade]):
     position = 0.0        # net S1  position, signed
     cost_basis = 0.0      # absolute S2 that backs the position (>= 0)
     realized_pnl = 0.0
 
-    for trade in tradeTable:
-        qty_S1 = trade[TRADE_TABLE_COL_ASSET_S1_QT]  # S1 amount (signed)
-        qty_S2 = trade[TRADE_TABLE_COL_ASSET_S2_QT]  # S2 amount (signed)
+    for trade in trade_table:        
+        qty_S1 = trade.quantity1  # S1 amount (signed)
+        qty_S2 = trade.quantity2  # S2 amount (signed)
 
         # Opening when flat
         if position == 0:
@@ -498,17 +388,17 @@ def _avgCost_pnl(LastPrice, tradeTable):
     # finalize avg cost and unrealized
     avg_cost = cost_basis / abs(position) if position != 0 else 0.0
     if position > 0:
-        unrealized_pnl = position * (LastPrice - avg_cost)
+        unrealized_pnl = position * (last_close - avg_cost)
     elif position < 0:
-        unrealized_pnl = abs(position) * (avg_cost - LastPrice)
+        unrealized_pnl = abs(position) * (avg_cost - last_close)
     else:
         unrealized_pnl = 0.0
 
     return unrealized_pnl, realized_pnl, avg_cost, cost_basis
 
 #Main strategy logic
-def _advanceDCA(strategySettings, BalanceSymbol1, BalanceSymbol2, LastPrice):
-    if not strategySettings["run"]:
+def _advanceDCA(strategy, BalanceSymbol1, BalanceSymbol2, record_class: HighLowManager, history_pair: PairHistory, fear_gread: int, trade_table: list[Trade]) -> Trade:
+    if not strategy["run"]:
         return
     #Create active data to pass to UI
     activeStrategyData = {}
@@ -516,23 +406,24 @@ def _advanceDCA(strategySettings, BalanceSymbol1, BalanceSymbol2, LastPrice):
     now_utc = datetime.now(timezone.utc)
     timestamp_seconds = int(now_utc.timestamp())
     #Create Index in dictionary to save max value
-    global histStrategyVal, advanceDCAstatus
+    global  advanceDCAstatus
     
     try:
         #path to candlestick history
-        Pair = f"{strategySettings["Symbol1"]}{strategySettings["Symbol2"]}"
-        #filePath = f"data/_{strategySettings["Symbol1"]}_{strategySettings["Symbol2"]}_candle_{strategySettings["CandleInterval"]}.csv"
-        if not historyKlineData[Pair]["Intervals"][strategySettings["CandleInterval"]]:
+        id= strategy["id"]
+        s1 = strategy["Symbol1"]
+        s2 = strategy["Symbol2"]
+        pair = f"{s1}{s2}"
+        record_id = f"{id}_{pair}"
+        paper_trade = strategy["paperTrading"]
+        rec = record_class.get(record_id) 
+        hist_data : IntervalData = history_pair.intervals[strategy["CandleInterval"]]
+
+        if not hist_data:
             return
-        strSaveValMax = f"{strategySettings["type"]}_{strategySettings["id"]}_{Pair}_max"    
-        strSaveValMin = f"{strategySettings["type"]}_{strategySettings["id"]}_{Pair}_min"
-        if not (strSaveValMax in histStrategyVal): histStrategyVal[strSaveValMax] = LastPrice #create if it does not exist
-        if not (strSaveValMin in histStrategyVal): histStrategyVal[strSaveValMin] = LastPrice #create if it does not exist        
-        if histStrategyVal[strSaveValMin] ==0: histStrategyVal[strSaveValMin] = LastPrice
-        #my_histData = historyKlineData[Pair]["Intervals"][strategySettings["CandleInterval"]].copy()#np.genfromtxt(filePath, delimiter=",") #Create an array from csv
-        timeStampClose = historyKlineData[Pair]["Intervals"][strategySettings["CandleInterval"]]["timeStampClose"]
-        high =  historyKlineData[Pair]["Intervals"][strategySettings["CandleInterval"]]["high"]
-        low =  historyKlineData[Pair]["Intervals"][strategySettings["CandleInterval"]]["low"]
+        time_close = hist_data.time_close
+        high =  hist_data.high
+        low =  hist_data.low
 
         avarageCost = {"avg" : 0.0, "sumS1" : 0.0, "sumS2" : 0.0}
         avarageEntry = {"avg" : 0.0, "sumS1" : 0.0, "sumS2" : 0.0}
@@ -541,27 +432,26 @@ def _advanceDCA(strategySettings, BalanceSymbol1, BalanceSymbol2, LastPrice):
         unrealizedPnL = 0.0
         totalPnL = 0.0
         totalPnLpercent = 0.0
-        my_tradeData = None
         #Get last trade data -----------------------------------------------------
-        if strategySettings["paperTrading"]: #Generate file path
-            my_tradeData = localTradeTables[strategySettings["id"]]["PaperTrades"]
+        if paper_trade: #Generate file path
+            trade_id = "Paper"
         else:
-            my_tradeData = localTradeTables[strategySettings["id"]]["Trades"]
-        lastTrade = [] 
-        if my_tradeData != None:
-            for trade in my_tradeData:
-                lastTrade = trade
-                avarageCost["sumS1"] += trade[TRADE_TABLE_COL_ASSET_S1_QT]
-                avarageCost["sumS2"] += trade[TRADE_TABLE_COL_ASSET_S2_QT]
-                if trade[TRADE_TABLE_COL_ASSET_S1_QT] > 0.0:#Buys
-                    avarageEntry["sumS1"] += abs(trade[TRADE_TABLE_COL_ASSET_S1_QT])
-                    avarageEntry["sumS2"] += abs(trade[TRADE_TABLE_COL_ASSET_S2_QT])
+            trade_id = "Open"
+        last_trade: Trade = [] 
+        if trade_table != None:
+            for trade in trade_table:
+                last_trade = trade
+                avarageCost["sumS1"] += trade.quantity1
+                avarageCost["sumS2"] += trade.quantity2
+                if trade.quantity1 > 0.0:#Buys
+                    avarageEntry["sumS1"] += abs(trade.quantity1)
+                    avarageEntry["sumS2"] += abs(trade.quantity2)
                 else:#Sells
-                    avarageExit["sumS1"] += abs(trade[TRADE_TABLE_COL_ASSET_S1_QT])
-                    avarageExit["sumS2"] += abs(trade[TRADE_TABLE_COL_ASSET_S2_QT])
+                    avarageExit["sumS1"] += abs(trade.quantity1)
+                    avarageExit["sumS2"] += abs(trade.quantity2)
                 
             #Get trade data for calculation avradge cost and profit and loss         
-            unrealizedPnL, realizedPnL, avarageCost["avg"], cost_basis = _avgCost_pnl(LastPrice, my_tradeData)
+            unrealizedPnL, realizedPnL, avarageCost["avg"], cost_basis = _avgCost_pnl(rec.close, trade_table)
             totalPnL = unrealizedPnL + realizedPnL
             
             totalPnLpercent = (totalPnL / abs(cost_basis)) * 100 if cost_basis != 0 else 0
@@ -570,81 +460,76 @@ def _advanceDCA(strategySettings, BalanceSymbol1, BalanceSymbol2, LastPrice):
                 avarageEntry["avg"] = avarageEntry["sumS2"]/avarageEntry["sumS1"]
             if avarageExit["sumS1"] != 0:
                 avarageExit["avg"] = avarageExit["sumS2"]/avarageExit["sumS1"]
-    
-        else:
-            my_tradeData = []
-
+            
         newTradeEn = True     
-        lookBack = strategySettings["NumOfCandlesForLookback"]
+        lookBack = strategy["NumOfCandlesForLookback"]
         
         # check if price went above the last buy to reset max
-        if len(lastTrade) > 0: #chack if we have a trade
+        if last_trade: #chack if we have a trade
             #Enable new trade if min time passed from last one
-            newTradeEn = (timestamp_seconds - int(lastTrade[TRADE_TABLE_COL_TIMESTAMP]/1000)) > strategySettings["timeLimitNewOrder"]   
+            newTradeEn = (timestamp_seconds - int(last_trade.timestamp/1000)) > strategy["timeLimitNewOrder"]   
             
             count = 1
-            for time in timeStampClose: #Go trough history candles from past to now        
+            for time in time_close: #Go trough history candles from past to now        
                 #count untill candle time close is smaler than trade time count will be the new lookBack
                 timeClose = int(time)
-                timeLastTrade = int(lastTrade[TRADE_TABLE_COL_TIMESTAMP])
+                timeLastTrade = int(last_trade.timestamp)
                 if (timeClose < timeLastTrade):
                     count += 1 #count will point to the index of a candle wher trade happened    
             #If count is max lenght then trade was in last candle
             lookBack = int(len(high)) - int(count)
         
         lookBack = int(lookBack)#Numpy is making a mess for comparisments later
-        maxLB = int(strategySettings["NumOfCandlesForLookback"]) #numpy is making a mess 
+        maxLB = int(strategy["NumOfCandlesForLookback"]) #numpy is making a mess 
         #If trade was on last candle no need to generate max 
         if lookBack < 1: #Trade in the last candle #Save to dictionary maximum FOR BUY
-            histStrategyVal[strSaveValMax] = max(histStrategyVal[strSaveValMax], LastPrice)
-            maxPrice =float(lastTrade[TRADE_TABLE_COL_PRICE])
-            maxPrice = max(maxPrice, histStrategyVal[strSaveValMax])# Need check if the price went above
-            #Save to dictionary minumum value FOR SELL for minimum both have to be non 0
-            histStrategyVal[strSaveValMin] = min(LastPrice,histStrategyVal[strSaveValMin])                
-            minPrice =float(lastTrade[TRADE_TABLE_COL_PRICE])
-            minPrice = min(minPrice, histStrategyVal[strSaveValMin]) # Check if the price went below
+            max_price =float(last_trade.price)
+            max_price = max(max_price, rec.high)# Need check if the price went above             
+            min_price =float(last_trade.price)
+            min_price = min(min_price, rec.low) # Check if the price went below
         elif 0 < lookBack < maxLB:#Trade was done one candle ago and les than selected lookback              
             #Write last trade price to the TA anlasys arry to use it insted of actual value
-            high[len(high)-1 -lookBack] = max(histStrategyVal[strSaveValMax] ,lastTrade[TRADE_TABLE_COL_PRICE])
+            high[len(high)-1 -lookBack] = max(rec.high ,last_trade.price)
             #Write last trade price to the TA anlasys arry to use it insted of actual value
-            low[len(low)-1 -lookBack] = min(histStrategyVal[strSaveValMin],lastTrade[TRADE_TABLE_COL_PRICE])  #Write last trade price to the TA anlasys arry to use it insted of actual value
+            low[len(low)-1 -lookBack] = min(rec.low,last_trade.price)  #Write last trade price to the TA anlasys arry to use it insted of actual value
             maxK = ta.MAX(high,lookBack+1) #Using lenght +1 to use the price that was added to array so it will compare current candle with price before
-            maxPrice = maxK[-1]                
+            max_price = maxK[-1]                
             minK = ta.MIN(low,lookBack+1)  
-            minPrice = minK[-1]              
+            min_price = minK[-1]              
         else: #Trade was done more than "NumOfCandlesForLookback" candles ago ta will get min and max                
             lookBack = maxLB
             maxK = ta.MAX(high,lookBack)
-            maxPrice = maxK[-1]
-            histStrategyVal[strSaveValMax] = LastPrice
+            max_price = maxK[-1]
             minK = ta.MIN(low,lookBack)
-            minPrice = minK[-1]
-            histStrategyVal[strSaveValMin] = LastPrice
+            min_price = minK[-1]
+            record_class.reset(record_id, rec.close)
 
-        if strategySettings["candleCloseOnly"] and newTradeEn:
-            lastCandleClose = int(timeStampClose[-2]/1000)
-            newTradeEn = int(timestamp_seconds - lastCandleClose) < int(strategySettings["timeLimitNewOrder"]*0.9)
+        if strategy["candleCloseOnly"] and newTradeEn:
+            lastCandleClose = int(time_close[-2]/1000)
+            newTradeEn = int(timestamp_seconds - lastCandleClose) < int(strategy["timeLimitNewOrder"]*0.9)
 
         #Go trough indexes
         #Dynamic BUY strategy factor and blocking trades
         dynBuyTradeEn, dynBuyFactor, activeStrategyData = _calcIndicators(
-            "Buy", strategySettings, activeStrategyData, 
+            "Buy", strategy, activeStrategyData, 
             avarageCost["avg"], avarageEntry["avg"], avarageExit["avg"], 
-            LastPrice)
+            rec.close, history_pair, fear_gread
+            )
         #Dynamic SELL strategy factor
         dynSellTradeEn, dynSellFactor, activeStrategyData = _calcIndicators(
-            "Sell", strategySettings, activeStrategyData, 
+            "Sell", strategy, activeStrategyData, 
             avarageCost["avg"], avarageEntry["avg"], avarageExit["avg"], 
-            LastPrice)
+            rec.close, history_pair, fear_gread
+            )
         #Factor MAX limitations
-        dynBuyFactor = min(dynBuyFactor, strategySettings["BuyMaxFactor"])
-        dynSellFactor = min(dynSellFactor, strategySettings["SellMaxFactor"])   
+        dynBuyFactor = min(dynBuyFactor, strategy["BuyMaxFactor"])
+        dynSellFactor = min(dynSellFactor, strategy["SellMaxFactor"])   
         #remove numpy
         dynSellFactor = float(dynSellFactor)
         dynBuyFactor = float(dynBuyFactor)     
         #-----------------------------Asset manager call--------------------------------------------------------------------------     
         toBuy, S2balanceOK, toSell, S1balanceOK, AvailableS2Assets, AvailableS1Assets = _assetManager(
-            strategySettings = strategySettings, 
+            strategySettings = strategy, 
             BalanceSymbol1 = float(BalanceSymbol1), 
             BalanceSymbol2 = float(BalanceSymbol2), 
             dynFactorBuy = dynBuyFactor, 
@@ -652,600 +537,248 @@ def _advanceDCA(strategySettings, BalanceSymbol1, BalanceSymbol2, LastPrice):
             avarageEntry = avarageEntry, 
             avarageExit = avarageExit, 
             avarageCost = avarageCost, 
-            LastPrice = LastPrice
+            LastPrice = rec.close
             )
         
         #Remove Numpy stuf
-        LastPrice = float(LastPrice)
-        maxPrice = float(maxPrice)
-        minPrice= float(minPrice)
+        rec_close = float(rec.close)
+        max_price = float(max_price)
+        min_price= float(min_price)
         toBuy = float(toBuy)
         toSell = float(toSell)
 
         #Check changes form Max newBuyDropOk
-        PercentCahangeFromMax = (maxPrice - LastPrice)/maxPrice * 100
-        newBuyDropOk = PercentCahangeFromMax > strategySettings["DipBuy"]
+        PercentCahangeFromMax = (max_price - rec_close)/max_price * 100
+        newBuyDropOk = PercentCahangeFromMax > strategy["DipBuy"]
         #Check changes form Min newSellPumpOk
-        PercentCahangeFromMin = (LastPrice - minPrice)/minPrice * 100
-        newSellPumpOk = PercentCahangeFromMin > strategySettings["TakeProfit"]
+        PercentCahangeFromMin = (rec_close - min_price)/min_price * 100
+        newSellPumpOk = PercentCahangeFromMin > strategy["TakeProfit"]
         
         #----------------------Cal buy/sel cmds----------------------------
         commission = 0.0 #create a column to bi filled when trade happens
         commission_asset = "NaN"  #create a column to bi filled when trade happens
-        if strategySettings["paperTrading"]: #pater trades
-            if (newBuyDropOk and
+        trade_trigger = False
+        #Buy conditions
+        if (newBuyDropOk and
                 newTradeEn and
                 dynBuyTradeEn and
-                S2balanceOK
-                ):
-                trade = [timestamp_seconds*1000, "Paper", 
-                        strategySettings["Symbol1"], 
-                        toBuy/LastPrice, 
-                        strategySettings["Symbol2"],
-                        -toBuy,
-                        LastPrice,
-                        maxPrice,
-                        minPrice,
-                        lookBack,
-                        avarageCost["avg"],
-                        PercentCahangeFromMax,                        
-                        commission, 
-                        commission_asset
-                        ]
-                localTradeTables[strategySettings["id"]]["NewData"] = True
-                my_tradeData.append(trade)
-                localTradeTables[strategySettings["id"]]["PaperTrades"] = my_tradeData
-                #TradeSaveTocsv(filePath, trade)
-                #Block double trades
-                newTradeEn = False
-                #Reset saved values
-                histStrategyVal[strSaveValMax] = LastPrice
-                histStrategyVal[strSaveValMin] = LastPrice
-                #logger.info(f"New paper BUY order {trade}")
-
-            if (newSellPumpOk and
+                S2balanceOK):
+            s1_qt = toBuy/rec_close
+            s2_qt = -toBuy
+            percent_change = PercentCahangeFromMax
+            #Block sell
+            newTradeEn = False
+            trade_trigger = True #Trigger trade
+            side = "BUY"
+        #Sell conditions
+        if (newSellPumpOk and
                 newTradeEn and
                 dynSellTradeEn and
-                S1balanceOK    
-                ):
-                trade = [timestamp_seconds*1000, "Paper", 
-                        strategySettings["Symbol1"], 
-                        -toSell/LastPrice, 
-                        strategySettings["Symbol2"],
-                        toSell,
-                        LastPrice,
-                        maxPrice,
-                        minPrice,
-                        lookBack,
-                        avarageCost["avg"],
-                        PercentCahangeFromMin,                        
-                        commission, 
-                        commission_asset
-                        ]
-                localTradeTables[strategySettings["id"]]["NewData"] = True
-                my_tradeData.append(trade)
-                localTradeTables[strategySettings["id"]]["PaperTrades"] = my_tradeData
-                #TradeSaveTocsv(filePath, trade)
-                #Block double trades
-                newTradeEn = False
-                #Reset saved values
-                histStrategyVal[strSaveValMax] = LastPrice
-                histStrategyVal[strSaveValMin] = LastPrice
-                #logger.info(f"New paper SELL order {trade}")
-        else: #-----------------LIVE trades
-            if (newBuyDropOk and
-                newTradeEn and
-                S2balanceOK and
-                dynBuyTradeEn                
-                ):
-                trade = [timestamp_seconds*1000, 
-                        "Open",#write order as Open trade manager will close it 
-                        strategySettings["Symbol1"],  #2
-                        toBuy/LastPrice,          #3
-                        strategySettings["Symbol2"],
-                        -toBuy,             #5
-                        LastPrice,              #6
-                        maxPrice,
-                        minPrice,
-                        lookBack,
-                        avarageCost["avg"],            #10
-                        PercentCahangeFromMin,  #11                   
-                        commission,             #12
-                        commission_asset        #13
-                        ]
-                my_tradeData.append(trade)
-                localTradeTables[strategySettings["id"]]["Trades"] = my_tradeData
-                #TradeSaveTocsv(filePath, trade)
-                #Block double trades
-                newTradeEn = False
-                #Reset saved values
-                histStrategyVal[strSaveValMax] = LastPrice
-                histStrategyVal[strSaveValMin] = LastPrice                
-                logger.info(f"New BUY order at : {datetime.fromtimestamp(int(timestamp_seconds))} \n "
-                            f"strategy id : {strategySettings["id"]} \n "
-                            f"pair : {strategySettings["Symbol1"]}/{strategySettings["Symbol2"]} \n "
-                            f"BUY : {toBuy/LastPrice} {strategySettings["Symbol1"]} \n "
-                            f"for : {toBuy} {strategySettings["Symbol2"]} \n "
-                            f"at price : {LastPrice} "
-                            )
-            if (newSellPumpOk and
-                newTradeEn and
-                S1balanceOK and
-                dynSellTradeEn
-                ):
-                trade = [timestamp_seconds*1000, "Open", 
-                        strategySettings["Symbol1"], 
-                        -toSell/LastPrice, 
-                        strategySettings["Symbol2"],
-                        toSell,
-                        LastPrice,
-                        maxPrice,
-                        minPrice,
-                        lookBack,
-                        avarageCost["avg"],
-                        PercentCahangeFromMin,                        
-                        commission, 
-                        commission_asset
-                        ]
-                my_tradeData.append(trade)
-                localTradeTables[strategySettings["id"]]["Trades"] = my_tradeData
-                #TradeSaveTocsv(filePath, trade)
-                #Block double trades
-                newTradeEn = False
-                #Reset saved values
-                histStrategyVal[strSaveValMax] = LastPrice
-                histStrategyVal[strSaveValMin] = LastPrice
-                logger.info(f"New SELL order at : {datetime.fromtimestamp(int(timestamp_seconds))} \n "
-                            f"strategy id : {strategySettings["id"]} \n "
-                            f"pair : {strategySettings["Symbol1"]}/{strategySettings["Symbol2"]} \n "
-                            f"SELL : {toSell/LastPrice} {strategySettings["Symbol1"]} \n "
-                            f"for : {toSell} {strategySettings["Symbol2"]} \n "
-                            f"at price : {LastPrice} "
-                            )
+                S1balanceOK):            
+            s1_qt = -toSell/rec_close
+            s2_qt = toSell
+            percent_change = PercentCahangeFromMin
+            trade_trigger = True #Trigger trade
+            side = "SELL"
+        trade = None
+        #Write trade to table
+        if trade_trigger:
+            trade_trigger = False
+            #Format trade
+            trade: Trade = Trade(
+                    timestamp=timestamp_seconds*1000,
+                    idx=trade_id,
+                    symbol1=s1,
+                    quantity1=s1_qt,
+                    symbol2=s2,
+                    quantity2=s2_qt,
+                    price=rec_close,
+                    max_p=max_price,
+                    min_p=min_price,
+                    lookback=lookBack,
+                    avg_cost=avarageCost["avg"],
+                    change=percent_change,
+                    commision=commission,
+                    commision_symbol=commission_asset
+                )
+
+            #Reset saved values
+            record_class.reset(record_id, rec.close)
+            if not paper_trade:                    
+                logger.info(f"New {side} order at : {datetime.fromtimestamp(int(timestamp_seconds))} \n "
+                            f"strategy id : {id} \n "
+                            f"pair : {s1}/{s2} \n "
+                            f"{side} : {s1_qt} {s1} \n "
+                            f"for : {s2_qt} {s2} \n "
+                            f"at price : {rec_close} ")
         
         if True: #Save active strategy values 
-            temp = toSell/LastPrice
+            temp = toSell/rec_close
             countForRound = 2
             while temp < 1 and temp > 0:
                 temp = temp*10
                 countForRound +=1          
             #Save strategy values 
-            activeStrategyData["Last Price"] = LastPrice
-            activeStrategyData[f"{strategySettings["Symbol1"]}"] = float(BalanceSymbol1)
-            activeStrategyData[f"{strategySettings["Symbol2"]}"] = float(BalanceSymbol2)
-            activeStrategyData["Avradge cost"] = round(avarageCost["avg"], strategySettings["roundBuySellorder"])
-            activeStrategyData["Avradge entry"] = round(avarageEntry["avg"], strategySettings["roundBuySellorder"])
-            activeStrategyData["Avradge exit"] = round(avarageExit["avg"], strategySettings["roundBuySellorder"])
-            activeStrategyData["Cost SumS2"] = round(avarageCost["sumS2"], strategySettings["roundBuySellorder"])
-            activeStrategyData["Entry SumS2"] = round(avarageEntry["sumS2"], strategySettings["roundBuySellorder"])
-            activeStrategyData["Exit SumS2"] = round(avarageExit["sumS2"], strategySettings["roundBuySellorder"])
+            activeStrategyData["Last Price"] = rec_close
+            activeStrategyData[f"{strategy["Symbol1"]}"] = float(BalanceSymbol1)
+            activeStrategyData[f"{strategy["Symbol2"]}"] = float(BalanceSymbol2)
+            activeStrategyData["Avradge cost"] = round(avarageCost["avg"], strategy["roundBuySellorder"])
+            activeStrategyData["Avradge entry"] = round(avarageEntry["avg"], strategy["roundBuySellorder"])
+            activeStrategyData["Avradge exit"] = round(avarageExit["avg"], strategy["roundBuySellorder"])
+            activeStrategyData["Cost SumS2"] = round(avarageCost["sumS2"], strategy["roundBuySellorder"])
+            activeStrategyData["Entry SumS2"] = round(avarageEntry["sumS2"], strategy["roundBuySellorder"])
+            activeStrategyData["Exit SumS2"] = round(avarageExit["sumS2"], strategy["roundBuySellorder"])
             activeStrategyData["Cost SumS1"] = round(avarageCost["sumS1"], countForRound)
             activeStrategyData["Entry SumS1"] = round(avarageEntry["sumS1"], countForRound)
             activeStrategyData["Exit SumS1"] = round(avarageExit["sumS1"], countForRound)
-            activeStrategyData["Profit_Loss"] = round(totalPnL, strategySettings["roundBuySellorder"])
+            activeStrategyData["Profit_Loss"] = round(totalPnL, strategy["roundBuySellorder"])
             activeStrategyData["Profit_LossPercent"] = round(totalPnLpercent, 2)
-            activeStrategyData["PnL_realized"] = round(realizedPnL, strategySettings["roundBuySellorder"])
-            activeStrategyData["PnL_unrealized"] = round(unrealizedPnL, strategySettings["roundBuySellorder"])
-            activeStrategyData["Max Price"] = maxPrice
-            activeStrategyData["Min Price"] = minPrice
+            activeStrategyData["PnL_realized"] = round(realizedPnL, strategy["roundBuySellorder"])
+            activeStrategyData["PnL_unrealized"] = round(unrealizedPnL, strategy["roundBuySellorder"])
+            activeStrategyData["Max Price"] = max_price
+            activeStrategyData["Min Price"] = min_price
             activeStrategyData["Buy Ammount"] = toBuy
             activeStrategyData["Buy Factor"] =  round(dynBuyFactor,2) #save active data
             activeStrategyData["Buy Percente change"] = round(PercentCahangeFromMax,2)
             activeStrategyData["Sell Percente change"] = round(PercentCahangeFromMin,2)
-            activeStrategyData["Sell Ammount Symbol1"] = round(toSell/LastPrice, countForRound)
+            activeStrategyData["Sell Ammount Symbol1"] = round(toSell/rec_close, countForRound)
             activeStrategyData["Sell Ammount"] = toSell
             activeStrategyData["Sell Factor"] = round(dynSellFactor,2) #save active data
 
             #Save advanceDCAstatus
             #Get index of the trade strategy
-            id = f"id_{strategySettings["id"]}"        
+            id = f"id_{strategy["id"]}"        
             advanceDCAstatus[id] = {} # initiate / if exist it will be cleared the strategy trade data
             #Fill base data                 
-            advanceDCAstatus[id]["Symbol1"] = strategySettings["Symbol1"]
-            advanceDCAstatus[id]["Symbol2"] = strategySettings["Symbol2"]
-            advanceDCAstatus[id]["BuyBase"] = strategySettings["BuyBase"]
-            advanceDCAstatus[id]["BuyMin"] = strategySettings["BuyMin"]
-            advanceDCAstatus[id]["SellBase"] = strategySettings["SellBase"]
-            advanceDCAstatus[id]["SellMin"] = strategySettings["SellMin"]
-            advanceDCAstatus[id]["assetManagerTarget"] = strategySettings["assetManagerTarget"]
-            advanceDCAstatus[id]["paperTrading"] = strategySettings["paperTrading"]
-            advanceDCAstatus[id]["candleCloseOnly"] = strategySettings["candleCloseOnly"]
-            advanceDCAstatus[id]["assetManagerSymbol"] = strategySettings[f"Symbol{strategySettings["assetManagerSymbol"]}"]
-            advanceDCAstatus[id]["AvailableS2Assets"] = round(AvailableS2Assets, strategySettings["roundBuySellorder"])
+            advanceDCAstatus[id]["Symbol1"] = strategy["Symbol1"]
+            advanceDCAstatus[id]["Symbol2"] = strategy["Symbol2"]
+            advanceDCAstatus[id]["BuyBase"] = strategy["BuyBase"]
+            advanceDCAstatus[id]["BuyMin"] = strategy["BuyMin"]
+            advanceDCAstatus[id]["SellBase"] = strategy["SellBase"]
+            advanceDCAstatus[id]["SellMin"] = strategy["SellMin"]
+            advanceDCAstatus[id]["assetManagerTarget"] = strategy["assetManagerTarget"]
+            advanceDCAstatus[id]["paperTrading"] = strategy["paperTrading"]
+            advanceDCAstatus[id]["candleCloseOnly"] = strategy["candleCloseOnly"]
+            advanceDCAstatus[id]["assetManagerSymbol"] = strategy[f"Symbol{strategy["assetManagerSymbol"]}"]
+            advanceDCAstatus[id]["AvailableS2Assets"] = round(AvailableS2Assets, strategy["roundBuySellorder"])
             advanceDCAstatus[id]["AvailableS1Assets"] = round(AvailableS1Assets, countForRound)
-            advanceDCAstatus[id]["BalanceSymbol2"] = round(float(BalanceSymbol2), strategySettings["roundBuySellorder"])
+            advanceDCAstatus[id]["BalanceSymbol2"] = round(float(BalanceSymbol2), strategy["roundBuySellorder"])
             advanceDCAstatus[id]["BalanceSymbol1"] = round(float(BalanceSymbol1), countForRound)
-            advanceDCAstatus[id]["CandleInterval"] = strategySettings["CandleInterval"]
+            advanceDCAstatus[id]["CandleInterval"] = strategy["CandleInterval"]
             advanceDCAstatus[id]["newTradeEn"] = newTradeEn
             advanceDCAstatus[id]["newBuyDropOk"] = newBuyDropOk
             advanceDCAstatus[id]["dynBuyTradeEn"] = dynBuyTradeEn
             advanceDCAstatus[id]["newBuyBalanceOk"] = S2balanceOK
-            advanceDCAstatus[id]["MinWeight_Buy"] = strategySettings[f"MinWeight_Buy"]
+            advanceDCAstatus[id]["MinWeight_Buy"] = strategy[f"MinWeight_Buy"]
             advanceDCAstatus[id]["newSellPumpOk"] = newSellPumpOk
             advanceDCAstatus[id]["newSellBalanceOk"] = S1balanceOK
             advanceDCAstatus[id]["dynSellTradeEn"] = dynSellTradeEn
-            advanceDCAstatus[id]["MinWeight_Sell"] = strategySettings[f"MinWeight_Sell"]
-            advanceDCAstatus[id]["type"] = strategySettings["type"]
-            advanceDCAstatus[id]["name"] = f"{strategySettings["name"]} ID:{strategySettings["id"]} {strategySettings["Symbol1"]}/{strategySettings["Symbol2"]}"
+            advanceDCAstatus[id]["MinWeight_Sell"] = strategy[f"MinWeight_Sell"]
+            advanceDCAstatus[id]["type"] = strategy["type"]
+            advanceDCAstatus[id]["name"] = f"{strategy["name"]} ID:{strategy["id"]} {strategy["Symbol1"]}/{strategy["Symbol2"]}"
             advanceDCAstatus[id]["data"] = activeStrategyData
 
         #print(f"Strategy status data: {advanceDCAstatus}")  
         # Wrtite status to logger 
-        logger.debug(f"Strategy id {strategySettings["id"]} \n {strategySettings["name"]} on {strategySettings["Symbol1"]}/{strategySettings["Symbol2"]} pair \n"
-                    f"last price: {LastPrice}; \n Avrage cost: {avarageCost["avg"]}; \n Profit/Loss : {round(totalPnL,6)} | {round(totalPnLpercent,2)} %; \n Lookback val: {lookBack}"
+        logger.debug(f"Strategy id {strategy["id"]} \n {strategy["name"]} on {strategy["Symbol1"]}/{strategy["Symbol2"]} pair \n"
+                    f"last price: {rec_close}; \n Avrage cost: {avarageCost["avg"]}; \n Profit/Loss : {round(totalPnL,6)} | {round(totalPnLpercent,2)} %; \n Lookback val: {lookBack}"
                     )        
-        return
+        return trade
     except Exception as e:
         logger.error(f"_advanceDCA() error: {e}")
 
-
-#Load historical data from file to variable historyKlineData
-def _manageHistKlineData(strategySettings, klineData = None, Symbol1="", Symbol2="", Interval=""):  
-    global historyKlineData
-    if klineData == None: #Build all from files
-        pairIntervals, _ = _generateListOfPairsAndIntervals(strategySettings)
-        #Clear the whole list
-        historyKlineData.clear()
-        for Pair in list(pairIntervals.keys()): #run trough all the stratagies
-            #Creat a dicionary structure for each pair and candle interval
-            #Pair = f"{strategy["Symbol1"]}{strategy["Symbol2"]}" 
-            if not Pair in historyKlineData:
-                historyKlineData[Pair] = {
-                    "Symbol1" : pairIntervals[Pair]["Symbol1"],
-                    "Symbol2" : pairIntervals[Pair]["Symbol2"],
-                    "Intervals" : {                        
-                    }
-                }
-            for interval in pairIntervals[Pair]["Intervals"]:
-                filePath = f"data/_{pairIntervals[Pair]["Symbol1"]}_{pairIntervals[Pair]["Symbol2"]}_candle_{interval}.csv"                
-                historyKlineData[Pair]["Intervals"][interval] = None
-                if os.path.exists(filePath):
-                    my_histData = np.genfromtxt(filePath, delimiter=",") #Create an array from csv
-                    historyKlineData[Pair]["Intervals"][interval] = {
-                        "timeStampOpen": my_histData[:,KLINE_TABLE_COL_TIMESTAMP_OPEN],
-                        "timeStampClose": my_histData[:,KLINE_TABLE_COL_TIMESTAMP_CLOSE],
-                        "open": my_histData[:,KLINE_TABLE_COL_OPEN],
-                        "close": my_histData[:,KLINE_TABLE_COL_CLOSE],
-                        "high": my_histData[:,KLINE_TABLE_COL_HIGH],
-                        "low": my_histData[:,KLINE_TABLE_COL_LOW],
-                        "vol1": my_histData[:,KLINE_TABLE_COL_VOLUME_S1]
-                    } #Create an array from csv
-                else:
-                    logger.info(f"loadHistKlineData() error: missing hist file: {filePath}")
-
-    else: #update one that was passed
-        Pair = f"{Symbol1}{Symbol2}" 
-        if not Pair in historyKlineData:
-                historyKlineData[Pair] = {
-                    "Symbol1" : Symbol1,
-                    "Symbol2" : Symbol2,
-                    "Intervals" : {
-                        Interval : None
-                    }
-                }
-        numPyData = np.array(klineData,dtype=np.float64)
-        historyKlineData[Pair]["Intervals"][Interval] = {
-                            "timeStampOpen": numPyData[:,KLINE_TABLE_COL_TIMESTAMP_OPEN],
-                            "timeStampClose": numPyData[:,KLINE_TABLE_COL_TIMESTAMP_CLOSE],
-                            "open": numPyData[:,KLINE_TABLE_COL_OPEN],
-                            "close": numPyData[:,KLINE_TABLE_COL_CLOSE],
-                            "high": numPyData[:,KLINE_TABLE_COL_HIGH],
-                            "low": numPyData[:,KLINE_TABLE_COL_LOW],
-                            "vol1": numPyData[:,KLINE_TABLE_COL_VOLUME_S1]
-                        } 
-        #Write data to file
-        csvFile = open(f"data/_{Symbol1}_{Symbol2}_candle_{Interval}.csv", "w", newline='')  #Open a Csv File
-        csvFile_writer = csv.writer(csvFile, delimiter="," ) #set csv delimiter for writer
-
-        for candlestick in klineData: #Go trough rows
-            csvFile_writer.writerow(candlestick) # Write rows
-
-        csvFile.close() # close ed csv file
-
-#Check candles hist data aging
-def _timeCheckHisKlineData(timestamp_seconds):
-    AllDataUpToDate = True
-    for Pair in list(historyKlineData.keys()):
-        for interval in list(historyKlineData[Pair]["Intervals"].keys()):
-            timestamp_close = int(historyKlineData[Pair]["Intervals"][interval]["timeStampClose"][-1]/1000)
-            if (timestamp_close < timestamp_seconds) : #Check if now() is bigger than timestamp of close the data is old new candles needed
-                AllDataUpToDate= False
-    return AllDataUpToDate
-
-#Update last candle of historyKlineData from klinStreamdData
-def _updateLastCandle_HistKlineData(Pair):
-    global historyKlineData
-    close = klinStreamdData[Pair]["close"] #Use only close value to update low and hig if necesary than the stream interval is irelevant
-    for histInterval in list(historyKlineData[Pair]["Intervals"].keys()): #go trough different intervals 
-        lastDatahigh = historyKlineData[Pair]["Intervals"][histInterval]["high"][-1]
-        lastDatalow = historyKlineData[Pair]["Intervals"][histInterval]["low"][-1]
-        lastDatahigh = max(lastDatahigh, close)
-        lastDatalow = min(lastDatalow, close)
-        historyKlineData[Pair]["Intervals"][histInterval]["close"][-1] = close
-        historyKlineData[Pair]["Intervals"][histInterval]["high"][-1] = lastDatahigh
-        historyKlineData[Pair]["Intervals"][histInterval]["low"][-1] = lastDatalow
-
-#Function to create a list of all pairs and their intervals with including the ones of indicators
-def _generateListOfPairsAndIntervals(strategySettings):
-    pairIntervals = {}
-    AllFilesExists = True
-    for strategy in strategySettings: #run trough all the stratagies
-        #Creat a dicionary structure for each pair and candle interval
-        Pair = f"{strategy["Symbol1"]}{strategy["Symbol2"]}" 
-        if not Pair in pairIntervals: #If unique add
-            pairIntervals[Pair] = {
-                "Symbol1" : strategy["Symbol1"],
-                "Symbol2" : strategy["Symbol2"],
-                "Intervals" : [strategy["CandleInterval"]]
-            }
-        if not strategy["CandleInterval"] in pairIntervals[Pair]["Intervals"]:#Check if unique
-            pairIntervals[Pair]["Intervals"].append(strategy["CandleInterval"]) #Add to the list of intervals
-        filePath = f"data/_{strategy["Symbol1"]}_{strategy["Symbol2"]}_candle_{strategy["CandleInterval"]}.csv"            
-        if not os.path.exists(filePath):                
-            AllFilesExists = False
-        for key in strategy.keys(): #Go trough all keys to find DynamicBuy and Sell
-            if "Dynamic" in key: #check if it is the list of indicators
-                for ind in strategy[key]: #go trough the list
-                    interval = ind.get("Interval") #Get if exists else it will be None value
-                    if not interval in pairIntervals[Pair]["Intervals"] and interval != None and interval in INDICATOR_INTERVAL_LIST: #Check if unique
-                        pairIntervals[Pair]["Intervals"].append(interval) #Add to the list of intervals
-                        filePath = f"data/_{strategy["Symbol1"]}_{strategy["Symbol2"]}_candle_{interval}.csv"            
-                        if not os.path.exists(filePath):                
-                            AllFilesExists = False
-    return pairIntervals, AllFilesExists
-
-def _readTradeCsv(filePath):    
-    rows = []
-    if os.path.exists(filePath):
-        csvFile = open(filePath,"r", newline="", encoding="utf-8")
-        reader = csv.reader(csvFile, delimiter=",")
-        for row in reader:
-            formatRow = [int(row[TRADE_TABLE_COL_TIMESTAMP]), #Format the rows as they are all strings from the reader
-                str(row[TRADE_TABLE_COL_ID]),
-                str(row[TRADE_TABLE_COL_SYMBOL_1]),
-                float(row[TRADE_TABLE_COL_ASSET_S1_QT]),
-                str(row[TRADE_TABLE_COL_SYMBOL_2]),
-                float(row[TRADE_TABLE_COL_ASSET_S2_QT]),
-                float(row[TRADE_TABLE_COL_PRICE]),
-                float(row[TRADE_TABLE_COL_MAX]),
-                float(row[TRADE_TABLE_COL_MIN]),
-                int(row[TRADE_TABLE_COL_LOOKBACK]),
-                float(row[TRADE_TABLE_COL_AVG_COST]),
-                float(row[TRADE_TABLE_COL_CHANGE]),
-                float(row[TRADE_TABLE_COL_COMMISION]),
-                str(row[TRADE_TABLE_COL_COMMISION_ASSET])]
-            rows.append(formatRow)
-        csvFile.close()
-        return rows
-    
-def _tradeTableManagment(strategySettings):
-    global localTradeTables
-    try:
-        #get current time data
-        now_utc = datetime.now(timezone.utc)
-        timestamp_seconds = int(now_utc.timestamp())
-        basicSettings = loadBsettings()
-        timeLimitopenOrder = basicSettings["liveTradeAging"]
-        tempIDList = []
-        for strategy in strategySettings: #for loop to troug all strategies
-            Pair = f"{strategy["Symbol1"]}{strategy["Symbol2"]}"
-            filePathBase = (f"Trade_{strategy["type"]}_"
-                        f"{strategy["Symbol1"]}_{strategy["Symbol2"]}_"
-                        f"{strategy["id"]}_.csv")
-            filePathPaper = f"data/_Paper{filePathBase}" 
-            filePathLive = f"data/_{filePathBase}"
-            tempIDList.append(strategy["id"]) #Add ti Id list to check for old strategies
-            if not strategy["id"] in localTradeTables: #creat new data inserts 
-                localTradeTables[strategy["id"]] = {
-                    "Pair" : Pair,
-                    "FilePathBase" : filePathBase,
-                    "Type" : strategy["type"],
-                    "Symbol1" : strategy["Symbol1"],
-                    "Symbol2" : strategy["Symbol2"],
-                    "NewData" : False,
-                    "PaperTrading" : strategy["paperTrading"],
-                    "CandleInterval" : strategy["CandleInterval"],
-                    "type" : strategy["type"],
-                    "name" : strategy["name"],
-                    "PaperTrades" : None,
-                    "Trades" : None
-                }
-                #Initial load of data from .csv           
-                localTradeTables[strategy["id"]]["PaperTrades"] = _readTradeCsv(filePathPaper)
-                localTradeTables[strategy["id"]]["Trades"] = _readTradeCsv(filePathLive)
-
-            else: #check existing data
-                if Pair != localTradeTables[strategy["id"]]["Pair"]: #check if Pair changed remove trading tables and relod from file if exists
-                    localTradeTables[strategy["id"]]["PaperTrades"] = None
-                    localTradeTables[strategy["id"]]["Trades"] = None                    
-                    #Initial load of data from .csv
-                    localTradeTables[strategy["id"]]["PaperTrades"] = _readTradeCsv(filePathPaper)
-                    localTradeTables[strategy["id"]]["Trades"] = _readTradeCsv(filePathLive)
-                if not os.path.exists(filePathPaper) and not localTradeTables[strategy["id"]]["NewData"]: #If no table clear the local data (when reset from manager)
-                    localTradeTables[strategy["id"]]["PaperTrades"] = None
-                if not os.path.exists(filePathLive) and not localTradeTables[strategy["id"]]["NewData"]: #If no table clear the local data (when reset from manager)
-                    localTradeTables[strategy["id"]]["Trades"] = None
-                localTradeTables[strategy["id"]]["Pair"] = Pair
-                localTradeTables[strategy["id"]]["FilePathBase"] = filePathBase
-                localTradeTables[strategy["id"]]["Symbol1"] = strategy["Symbol1"]
-                localTradeTables[strategy["id"]]["Symbol2"] = strategy["Symbol2"]
-                localTradeTables[strategy["id"]]["PaperTrading"] = strategy["paperTrading"]
-                localTradeTables[strategy["id"]]["CandleInterval"] = strategy["CandleInterval"]
-                localTradeTables[strategy["id"]]["type"] = strategy["type"]
-                localTradeTables[strategy["id"]]["name"] = strategy["name"]
-
-        for idKey in list(localTradeTables.keys()):#Run trough to manage changes
-            if idKey in tempIDList:# delete if the strategy does not exist anymore
-                if not localTradeTables[idKey]["PaperTrading"]: #if LIVE go trough the table to find open orders and execute them
-                    #Delete old open trandes
-                    tradeTable = localTradeTables[idKey]["Trades"]
-                    tradeTableNew = [ #Filter out all open trades 
-                        trade for trade in tradeTable
-                        if trade[TRADE_TABLE_COL_ID] != "Open" 
-                        ]
-                    openOreders = [ #Filter new open orders
-                        trade for trade in tradeTable
-                        if trade[TRADE_TABLE_COL_ID] == "Open" and (timestamp_seconds - int(trade[TRADE_TABLE_COL_TIMESTAMP])/1000 ) < timeLimitopenOrder
-                        ]
-                    if len(openOreders): #If any open orders execute the last one only
-                        tradeResponse = sendTrade(openOreders[-1])
-                        if tradeResponse != None:# If succesful append trade
-                            tradeTableNew.append(tradeResponse) #Add to new table
-                            localTradeTables[idKey]["NewData"] = True # Mark for updating the .csv
-                    localTradeTables[idKey]["Trades"] = None#Empty before inserting the updated one
-                    localTradeTables[idKey]["Trades"] = tradeTableNew
-            
-                #Update data in .csv
-                if localTradeTables[idKey]["NewData"]:
-                    if localTradeTables[idKey]["PaperTrading"]: #Create path and table for saving 
-                        filePath = f"data/_Paper{localTradeTables[idKey]["FilePathBase"]}"
-                        tradeTabelToSave = localTradeTables[idKey]["PaperTrades"]
-                    else:                    
-                        filePath = f"data/_{localTradeTables[idKey]["FilePathBase"]}"
-                        tradeTabelToSave = localTradeTables[idKey]["Trades"]
-                    #Write to .csv overwrite everithing 
-                    with open(filePath,mode="w", newline="", encoding="utf-8") as csvFile:
-                        writer = csv.writer(csvFile, delimiter=",")                        
-                        writer.writerows(tradeTabelToSave)
-                    csvFile.close()
-                    localTradeTables[idKey]["NewData"] = False
-                        
-            else: #Delete entry of an old strategy
-                del localTradeTables[idKey]
-        
-        _creatTradeTablesView()
-
-    except Exception as e:
-        logger.error(f"tradeTableManagment() error: {e}")
-
-#History cleanup -> delete data not used in any of the stratagies (preventing accesing old data in case of reuse strategy)
-def _clearUnusedHistData(strategySettings):
-    try:
-        idList = []
-        filePathList = []
-        pairIntervals, AllFilesExists = _generateListOfPairsAndIntervals(strategySettings)
-        # Call All stratagies         
-        for strategy in strategySettings: #run trough all the stratagies            
-            if str.lower(strategy["type"]) == str.lower("AdvancedDCA"): #run AdvancedDCA strategy only
-                id = strategy["id"]                
-                Pair = f"{strategy["Symbol1"]}{strategy["Symbol2"]}"
-                idList.append(f"{strategy["type"]}_{id}_{Pair}_min")
-                idList.append(f"{strategy["type"]}_{id}_{Pair}_max")
-                
-        for Pair in pairIntervals:
-            for interval in pairIntervals[Pair]["Intervals"]:
-                #path to candlestick history without data
-                filePath = f"_{pairIntervals[Pair]["Symbol1"]}_{pairIntervals[Pair]["Symbol2"]}_candle_{interval}.csv"
-                filePathList.append(filePath)
-
-        entries = os.listdir("data") # get all file names in directory
-        for entry in entries:
-            if "_candle_" in entry and not entry in filePathList:
-                os.remove(f"data/{entry}") #remove file
-        #Clear history values of strategy not in use
-        for key in list(histStrategyVal.keys()):
-            if not key in idList:
-                del histStrategyVal[key]
-
-    except Exception as e: 
-        logger.error(f"_clearUnusedHistData error: {e}")
-
+def _update_hist():
+    logger.debug(f"Fetching historical data")         
+    #Fetch historical data for all pairs and needed intervals            
+    pairs_intervals  = history_class.get_pairs_intervals() 
+    for _, info in pairs_intervals.items():
+        for interval in info["Intervals"]:
+            s1 = info["Symbol1"]
+            s2 = info["Symbol2"]
+            #call function 
+            kline_data = fetch_histData(
+                Symbol1=s1,
+                Symbol2=s2,
+                Interval=interval,
+                numData=settings_class.get("numOfHisCandles")                                     
+                )   
+            #Save to local data
+            if kline_data !=None:
+                history_class.update_interval(s1,s2,interval,kline_data) #Update data
+    #Read user data
+    fetch_userData() 
 
 listOldPrices = {}
 #Call the strategies -------------------------------------------------------------------------------------------
 def strategyRun():
-    global listOldPrices, timeHistFetch
-    try:         
-        basicSettings = loadBsettings()
-        strategySettings = loadStrSettings()       
+    global listOldPrices
+    if True: #try:      
         #get current time data
         now_utc = datetime.now(timezone.utc)
-        timestamp_seconds = int(now_utc.timestamp())
+        now_seconds = int(now_utc.timestamp())
         #Call cleenup
-        _clearUnusedHistData(strategySettings)
+        record.cleanup()
         advanceDCAstatus.clear()
-        _gefFearAndGread() #get Fear and Gread index
-        #Check if historical data exists if not reset historical time fetch (when new stratagy is added the data needs to be requested)
-        pairIntervals, AllFilesExists = _generateListOfPairsAndIntervals(strategySettings) 
-        #Check His data times need to be updated
-        AllDataUpToDate = _timeCheckHisKlineData(timestamp_seconds)
-        if not AllFilesExists or not AllDataUpToDate:  #force hist data fetch            
-            timeHistFetch = 0
-
+        fear_gread.update() #update Fear and Gread index
+        #Run history manager returns true if history files need update
+        hist_update_time = int(settings_class.get("histDataUpdate"))
+        update_history = history_class.run(hist_update_time)
+        
+        trade_manager_class.cleanup()
         # Fetch history data
-        if (timeHistFetch < (timestamp_seconds - (basicSettings["histDataUpdate"] *60)) or timeHistFetch == 0):
-            logger.debug(f"Fetching historical data")            
-            timeHistFetch = timestamp_seconds # reset Timer  
-            #Fetch historical data for all pairs and needed intervals
-            for Pair in pairIntervals:
-                for interval in pairIntervals[Pair]["Intervals"]:
-                    #call function 
-                    klineData = fetch_histData(
-                        Symbol1=pairIntervals[Pair]["Symbol1"],
-                        Symbol2=pairIntervals[Pair]["Symbol2"],
-                        Interval=interval,
-                        numData=basicSettings["numOfHisCandles"]                                         
-                        )   
-                    #Save to local data
-                    if klineData !=None:
-                        _manageHistKlineData(
-                            strategySettings, 
-                            klineData, 
-                            Symbol1=pairIntervals[Pair]["Symbol1"], 
-                            Symbol2=pairIntervals[Pair]["Symbol2"], 
-                            Interval=interval) #Update local variable with recived data  
-            #Read user data
-            fetch_userData() 
+        if update_history:
+            _update_hist()
             #src.loadHistKlineData(strategySettings) #read from .csv files and store in local table
-
         # Call All stratagies         
-        for strategy in strategySettings: #run trough all the stratagies
+        for id_ in strategies_class.id_list(): #run trough all the stratagies
+            strategy = strategies_class.get_by_id(id_)
             if str.lower(strategy["type"]) == str.lower("AdvancedDCA"): #run AdvancedDCA strategy only
                 balanceS1 = 0
-                balanceS2 = 0              
-                Pair = f"{strategy["Symbol1"]}{strategy["Symbol2"]}"
+                balanceS2 = 0  
+                s1 = strategy["Symbol1"]
+                s2 = strategy["Symbol2"]            
+                pair = f"{s1}{s2}"
                 
-                if strategy["Symbol1"] in my_balances:
-                    balanceS1 = my_balances[strategy["Symbol1"]]["Available"]
-                if strategy["Symbol2"] in my_balances:
-                    balanceS2 = my_balances[strategy["Symbol2"]]["Available"] 
-                #Set last price -1 will make strategy use data from history
-                lastPrice = -1.0
-                if len(klinStreamdData) > 0: #check if ther is any data from stream
-                    if Pair in klinStreamdData.keys(): #Check if the pair exists
-                        if (timestamp_seconds - klinStreamdData[Pair]["Time"]) < 180: #check the data is not older than 3 min
-                            lastPrice = klinStreamdData[Pair]["close"] #get close price
-                            _updateLastCandle_HistKlineData(Pair)
-                            #Call Strategy function only if there is stream data
-                            _advanceDCA(strategy, balanceS1, balanceS2, lastPrice)
-                        else:
-                            if not Pair in listOldPrices: #Try not to spam logger
-                                logger.error(f"strategyRun() error: Old price data for {Pair} {datetime.fromtimestamp(int(klinStreamdData[Pair]["Time"]))}")
-                            else:                                
-                                if listOldPrices[Pair] != klinStreamdData[Pair]["Time"]:
-                                    logger.error(f"strategyRun() error: Old price data for {Pair} {datetime.fromtimestamp(int(klinStreamdData[Pair]["Time"]))}")                                    
-                            listOldPrices[Pair] = klinStreamdData[Pair]["Time"]
-                    else:
-                        logger.error(f"strategyRun() error: No price data for {Pair} ")
-                else:
+                if s1 in my_balances:
+                    balanceS1 = my_balances[s1]["Available"]
+                if s2 in my_balances:
+                    balanceS2 = my_balances[s2]["Available"] 
+                if not klinStreamdData: #check if ther is any data from stream                    
                     logger.error(f"strategyRun() error: No price data for ALL")
-            
-        _tradeTableManagment(strategySettings)
-        #save_histStrategyVal()
+                    break
+                if pair not in klinStreamdData.keys(): #Check if the pair exists
+                    logger.error(f"strategyRun() error: No price data for {pair} ")
+                    continue
+                if not ((timestamp_seconds - klinStreamdData[pair]["Time"]) < 180): #check the data is not older than 3 min
+                    if not pair in listOldPrices: #Try not to spam logger
+                        logger.error(f"strategyRun() error: Old price data for {pair} {datetime.fromtimestamp(int(klinStreamdData[pair]["Time"]))}")
+                    else:                                
+                        if listOldPrices[pair] != klinStreamdData[pair]["Time"]:
+                            logger.error(f"strategyRun() error: Old price data for {pair} {datetime.fromtimestamp(int(klinStreamdData[pair]["Time"]))}")  
+                    listOldPrices[pair] = klinStreamdData[pair]["Time"]
+                    continue
 
-    except Exception as e: 
-        logger.error(f"strategyRun() error: {e}")
+                new_close = klinStreamdData[pair]["close"] #get close price
+                history_class.update_last(pair,new_close)
+                record.update(id_value=f"{id_}_{pair}", close=new_close)
+                trade_table = trade_manager_class.get_table(id_)
+                #Call Strategy function only if there is stream data
+                trade = _advanceDCA(strategy, balanceS1, balanceS2, record_class=record, 
+                                    history_pair=history_class.data[pair], 
+                                    fear_gread=fear_gread.data.value,
+                                    trade_table= trade_table)
+                #Trade manager calls for executing trades
+                if trade != None:
+                    trade_manager_class.new_trade(id_, trade)
+                open_trade = trade_manager_class.get_open(id_, settings_class.get("liveTradeAging"))
+                if open_trade:
+                    close_trade = sendTrade(open_trade)
+                    if close_trade:
+                        trade_manager_class.set_close(id_, close_trade)
+
+    #except Exception as e: 
+    #    logger.error(f"strategyRun() error: {e}")
 
 def shutDown():
-    _save_histStrategyVal()
+    record.save()
 
-def init():
-    strategy_settings = loadStrSettings()
-    #Run first to fill local variables
-    _load_histStrategyVal()
-    _gefFearAndGread() 
-    _tradeTableManagment(strategy_settings)
-    _manageHistKlineData(strategy_settings)
-
-
-init()
