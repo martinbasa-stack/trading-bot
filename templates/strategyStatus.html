@@ -1,0 +1,495 @@
+<html>
+    <head> 
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">       
+        <title>Bot status</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+        <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    </head>
+    <body>
+        <div class="sidenav"> 
+            {%for StrategyID in activeStrategyData %} 
+                {% if activeStrategyData[StrategyID]["paperTrading"] %}
+                    <button class="invert" 
+                {%else%}
+                    <button class="invert green" 
+                {%endif%}
+                id="nav_{{StrategyID}}" value="{{StrategyID}}" type="button">{{StrategyID}} {{activeStrategyData[StrategyID]["Symbol1"]}}/{{activeStrategyData[StrategyID]["Symbol2"]}} {{activeStrategyData[StrategyID]["CandleInterval"]}}</button>
+            {% endfor %}
+        </div>
+    <div class="wrapper">
+        <header>
+            <div>
+             <b>BOT STATUS</b>
+             </div>
+        </header>
+        <main>
+            <div id="stratStatus">
+                {%for StrategyID in activeStrategyData %}                  
+                <section id="{{StrategyID}}"> 
+                <hr class="custom-hr">   
+                {% if activeStrategyData[StrategyID]["paperTrading"] %}
+                <h2> 
+                {%else%}
+                <h2 class="headLive"> 
+                {%endif%}
+                    {{ activeStrategyData[StrategyID]["name"]  }} </h2>  
+                <div class="center-div">      
+
+                    <table class="wrap" border = "1"> <!--    --------------------------------------GENERAL Table ----------------------------------------------- -->
+                        <thead>
+                            <tr>
+                                <th colspan="4"> General </th>
+                            </tr>
+                        </thead>  
+                            <tbody>  
+                            <tr>
+                                <td colspan="2" class="first"> Pair | Candle  </td> 
+                                <td colspan="2"> 
+                                    {{ activeStrategyData[StrategyID]["Symbol1"] }} / 
+                                    {{ activeStrategyData[StrategyID]["Symbol2"] }} |                                    
+                                    {{ activeStrategyData[StrategyID]["CandleInterval"] }} 
+                                </td>
+                            </tr> 
+                            <tr>
+                                <td colspan="2" class="first"> Last price  {{ activeStrategyData[StrategyID]["Symbol1"] }}</td> 
+                                <td colspan="2"> {{ activeStrategyData[StrategyID]["data"]["Last Price"] }} 
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }}
+                                </td>
+                            </tr> 
+                            <tr>
+                                <td colspan="2" class="first"> Average cost  </td> 
+                                <td colspan="2"> {{ activeStrategyData[StrategyID]["data"]["Avradge cost"] }} 
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }}
+                                </td>
+                            </tr> 
+                            <tr>
+                                <td colspan="2" class="first"> Average entry  </td> 
+                                <td colspan="2"> {{ activeStrategyData[StrategyID]["data"]["Avradge entry"] }} 
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }}
+                                </td>
+                            </tr> 
+                            <tr>
+                                <td colspan="2" class="first"> Average exit  </td> 
+                                <td colspan="2"> {{ activeStrategyData[StrategyID]["data"]["Avradge exit"] }} 
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }}
+                                </td>
+                            </tr> 
+                            <tr>
+                                <td colspan="2" class="first"> Current profit/loss  </td> 
+                                {%if activeStrategyData[StrategyID]["data"]["Profit_LossPercent"] < 0.0 %}
+                                    <td colspan="2" class="redR">
+                                {%else%}
+                                    <td colspan="2" class="greenR"> 
+                                {%endif%}
+                                    {{ activeStrategyData[StrategyID]["data"]["Profit_Loss"] }} 
+                                    {{ activeStrategyData[StrategyID]["Symbol2"] }} <br>  
+                                    {{ activeStrategyData[StrategyID]["data"]["Profit_LossPercent"]}} %
+                                </td>
+                            </tr>                               
+                            <tr >
+                                <td colspan="2" class="first"> Max price</td> 
+                                <td colspan="2">
+                                    {{ activeStrategyData[StrategyID]["data"]["Max Price"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }}
+                                </td>
+                            </tr>               
+                            <tr>
+                                <td colspan="2" class="first"> Buy percent change </td> 
+                                <td colspan="2" >{{ activeStrategyData[StrategyID]["data"]["Buy Percente change"] }} %</td>
+                            </tr> 
+                            <tr>
+                                <td colspan="2" class="first"> Min price </td> 
+                                <td colspan="2">{{ activeStrategyData[StrategyID]["data"]["Min Price"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }}
+                                </td>
+                            </tr>                                
+                            <tr>
+                                <td colspan="2" class="first"> Sell percent change </td> 
+                                <td  colspan="2" >{{ activeStrategyData[StrategyID]["data"]["Sell Percente change"] }} %</td>
+                            </tr>   
+                                                
+                            <tr>
+                                <td colspan="2"  class="first">Asset managment</td> 
+                                <td colspan="2" >
+                                    Target {{ activeStrategyData[StrategyID]["assetManagerTarget"] }}
+                                    {%if activeStrategyData[StrategyID]["assetManagerTarget"] == "None" %}
+                                      
+                                    {%else%}
+                                    -> Save: {{ activeStrategyData[StrategyID]["assetManagerSymbol"] }} 
+                                    {%endif%}
+                                </td>
+                            </tr>                                              
+                            <tr>
+                                <td  colspan="2" class="first"> New trade possible </td> 
+                                    {% if activeStrategyData[StrategyID]["newTradeEn"] %}
+                                        <td colspan="2"  class="green">ENABLED</td>
+                                    {%else%}                                        
+                                        <td colspan="2"  class="red">BLOCKED</td>
+                                    {%endif%}    
+                            </tr>  
+                            <tr></tr>
+                            </tbody>
+                        </table>
+                        <table class="wrap" border = "1"><!----------------------------BUY Strategy----------------------------------------->
+                            <thead>                   
+                            <tr>
+                                <th class="buyInd" colspan="4">Buy strategy</th>                
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr></tr> 
+                            <tr><!---------------------Bool status----------------------------->
+                                <td>Drop OK</td>
+                                {% if activeStrategyData[StrategyID]["newBuyDropOk"]  %}
+                                        <td class="green">OK</td>
+                                {%else%}                                        
+                                    <td class="red">NO</td>
+                                {%endif%} 
+
+                                <td>Indicators OK </td>
+                                {% if activeStrategyData[StrategyID]["dynBuyTradeEn"]  %}
+                                        <td class="green">OK</td>
+                                {%else%}                                        
+                                    <td class="red">NO</td>
+                                {%endif%} 
+                            </tr>
+                            <tr><!---------------------Bool status----------------------------->
+                                <td>Balance OK </td>
+                                {% if activeStrategyData[StrategyID]["newBuyBalanceOk"]  %}
+                                        <td class="green">OK</td>
+                                {%else%}                                        
+                                    <td class="red">NO</td>
+                                {%endif%}                                 
+                                <td></td>
+                                <td></td>
+                            </tr>                                          
+                            <tr>
+                                <td colspan="2" class="first">Entry sum</td> 
+                                <td colspan="2">{{ activeStrategyData[StrategyID]["data"]["Entry SumS2"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }}
+                                </td>
+                            </tr>                                            
+                            <tr>
+                                <td colspan="2" class="first">Exit sum</td> 
+                                <td colspan="2">{{ activeStrategyData[StrategyID]["data"]["Exit SumS2"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }}
+                                </td>
+                            </tr>                                         
+                            <tr>
+                                <td colspan="2" class="first">Total sum</td> 
+                                <td colspan="2">{{ activeStrategyData[StrategyID]["data"]["Cost SumS2"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }}
+                                </td>
+                            </tr> 
+                                                                                
+                            <tr>
+                                <td  colspan="2" class="first">Buy Factor</td> 
+                                <td colspan="2" >{{ activeStrategyData[StrategyID]["data"]["Buy Factor"] }} %</td>
+                            </tr>
+                            <tr>
+                                <td colspan="2"  class="first">Base Buy</td> 
+                                <td colspan="2" >
+                                    {{ activeStrategyData[StrategyID]["BuyBase"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }} 
+                                </td>
+                            </tr>
+                            <tr>
+                                <td colspan="2"  class="first">Account ballance</td> 
+                                <td colspan="2" >
+                                    {{ activeStrategyData[StrategyID]["BalanceSymbol2"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }} 
+                                </td>
+                            </tr> 
+                            <tr>
+                                <td colspan="2"  class="first">Available assets</td> 
+                                <td colspan="2" >
+                                    {{ activeStrategyData[StrategyID]["AvailableS2Assets"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }} 
+                                </td>
+                            </tr>          
+                            <tr>
+                                <td colspan="2"  class="first">Amount to Buy</td> 
+                                <td colspan="2" >
+                                    {{ activeStrategyData[StrategyID]["data"]["Buy Ammount"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }}
+                                </td>
+                            </tr> 
+                            <tr>
+                                <td colspan="2"  class="first">Minimum Buy</td> 
+                                <td colspan="2" >
+                                    {{ activeStrategyData[StrategyID]["BuyMin"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }} 
+                                </td>
+                            </tr>   
+                            <tr></tr>
+                            </tbody>
+                        </table>
+                        <table class="wrap" border = "1"><!----------------------------SELL Strategy----------------------------------------->
+                            <thead>
+                            <tr>
+                                <th class="sellInd" colspan="4">Sell strategy</th>             
+                            </tr>
+                            </thead>
+                            <tbody> 
+                            <tr></tr>
+                            <tr> <!---------------------Bool status----------------------------->
+                                <td>Pump OK</td>
+                                {% if activeStrategyData[StrategyID]["newSellPumpOk"]  %}
+                                    <td class="green">OK</td>
+                                {%else%}                                        
+                                    <td class="red">NO</td>
+                                {%endif%} 
+                                <td>Indicators OK </td>
+                                {% if activeStrategyData[StrategyID]["dynSellTradeEn"]  %}
+                                    <td class="green">OK</td>
+                                {%else%}                                        
+                                    <td class="red">NO</td>
+                                {%endif%} 
+                            </tr>
+                            <tr><!---------------------Bool status----------------------------->
+                                <td>Balance OK</td>                        
+                                {% if activeStrategyData[StrategyID]["newSellBalanceOk"]  %}
+                                    <td class="green">OK</td>
+                                {%else%}                                        
+                                    <td class="red">NO</td>
+                                {%endif%}             
+                                <td></td>        
+                                <td></td>                            
+                            </tr>                                             
+                            <tr>
+                                <td colspan="2" class="first">Entry sum</td> 
+                                <td colspan="2">{{ activeStrategyData[StrategyID]["data"]["Entry SumS1"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol1"] }}
+                                </td>
+                            </tr>                                            
+                            <tr>
+                                <td colspan="2" class="first">Exit sum</td> 
+                                <td colspan="2">{{ activeStrategyData[StrategyID]["data"]["Exit SumS1"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol1"] }}
+                                </td>
+                            </tr>                                       
+                            <tr>
+                                <td colspan="2" class="first">Total sum</td> 
+                                <td colspan="2">{{ activeStrategyData[StrategyID]["data"]["Cost SumS1"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol1"] }}
+                                </td>
+                            </tr> 
+                            <tr>
+                                <td colspan="2"  class="first"> Sell Factor </td> 
+                                <td colspan="2" >{{ activeStrategyData[StrategyID]["data"]["Sell Factor"] }} %</td>
+                            </tr>                     
+                            <tr>
+                                <td colspan="2"  class="first">Base Sell</td> 
+                                <td colspan="2" >
+                                    {{ activeStrategyData[StrategyID]["SellBase"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }} 
+                                </td>
+                            </tr>   
+                            <tr>
+                                <td colspan="2"  class="first">Account ballance</td> 
+                                <td colspan="2" >
+                                    {{ activeStrategyData[StrategyID]["BalanceSymbol1"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol1"] }} 
+                                </td>
+                            </tr>                     
+                            <tr>
+                                <td colspan="2"  class="first">Available assets</td> 
+                                <td colspan="2" >
+                                    {{ activeStrategyData[StrategyID]["AvailableS1Assets"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol1"] }} 
+                                </td>
+                            </tr>       
+                            <tr>
+                                <td colspan="2"  class="first">Amount to Sell</td> 
+                                <td colspan="2" >
+                                    {{ activeStrategyData[StrategyID]["data"]["Sell Ammount"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }} / {{ activeStrategyData[StrategyID]["data"]["Sell Ammount Symbol1"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol1"] }}
+                                </td>
+                            </tr> 
+                            <tr>
+                                <td colspan="2"  class="first">Minimum Sell</td> 
+                                <td colspan="2" >
+                                    {{ activeStrategyData[StrategyID]["SellMin"] }}
+                                     {{ activeStrategyData[StrategyID]["Symbol2"] }} 
+                                </td>
+                            </tr>   
+                            </tbody>
+                    </table>    
+                    <table border = "1">  <!-------------------BUY indicator status---------------------------------->
+                        <thead>
+                            <tr>
+                                <th class="buyInd" colspan="9"> Buy indicators</th>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                {% if activeStrategyData[StrategyID]["dynBuyTradeEn"]  %}
+                                        <td colspan="7" class="green">
+                                {%else%}                                        
+                                    <td colspan="7" class="red">
+                                {%endif%} 
+                                Weight {{ activeStrategyData[StrategyID]["data"]["Weight_Buy"] }} >=
+                                {{ activeStrategyData[StrategyID]["MinWeight_Buy"] }} 
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <th>Id</th>
+                                <th>Indicator Type</th>
+                                <th>input</th>
+                                <th>Weight</th>
+                                <th>Trade</th> 
+                                <th>Condition Values</th>
+                                <th>Trigger</th>  
+                                <th>Delta</th>     
+                                <th>Factor</th>    
+                            </tr>
+                        </thead>  
+                        <tbody> 
+                            <tr></tr>
+                            {%for dataStrategy in activeStrategyData[StrategyID]["data"]["Buy"] %}   
+                                <tr>
+                                    <td> {{ dataStrategy }} </td> 
+                                    {%if activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Type"] == "AvrageCost" %} 
+                                    <td>Average Cost</td>
+                                    {%elif activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Type"] == "AvrageEntry" %} 
+                                    <td>Average Entry</td>
+                                    {%elif activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Type"] == "AvrageExit" %} 
+                                    <td>Average Exit</td>
+                                    {%elif activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Type"] == "F&G" %} 
+                                    <td>Fear & Gread</td>
+                                    {%else%}
+                                    <td>{{ activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Type"] }}</td>
+                                    {%endif%}
+                                    <td>{%if activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Value"] > 0 %}
+                                        {{ activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Value"] }}x {{ activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Interval"] }}
+                                        {%else%}
+                                        /
+                                        {%endif%}
+                                    </td>     
+                                    <td>
+                                        {{ activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Weight"] }} =
+                                        {{ activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["WeightActual"] }}
+                                    </td>                                   
+                                    {% if activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Blocking Trade"] %}
+                                        <td class="red">BLOCKED</td>
+                                    {%else%}
+                                        <td class="green">ENABLED</td>
+                                    {%endif%}                                    
+                                    <td>
+                                        {{ activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["textDisplay"] }} <br>
+                                        {{ activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["valToCompare"] }}
+                                        {% if "Above" == activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Comparator"]  %} > {%else%} < {% endif %}
+                                        {{ activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Trigger Offset"] }}
+                                    </td>
+                                    <td>{{ activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Trigger"] }}</td>       
+                                    <td>{{ activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Delta"] }}</td> 
+                                    
+                                    {%if  activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Enable"] %}
+                                        <td> 
+                                    {%else%}
+                                        <td class="crossed"> X 
+                                    {%endif%}
+                                            {{ activeStrategyData[StrategyID]["data"]["Buy"][dataStrategy]["Factor"] }} %
+                                        </td>                              
+                                </tr>
+                            {%endfor%}  
+                        </tbody>
+                    </table>    
+                    <table border = "1"> <!-------------------SELL indicator status---------------------------------->
+                        <thead>
+                            <tr>
+                                <th class="sellInd" colspan="9"> Sell indicators</th>
+                            </tr>
+                            <tr>
+                                <td></td>
+                                {% if activeStrategyData[StrategyID]["dynSellTradeEn"]  %}
+                                        <td colspan="7" class="green">
+                                {%else%}                                        
+                                    <td colspan="7" class="red">
+                                {%endif%} 
+                                Weight {{ activeStrategyData[StrategyID]["data"]["Weight_Sell"] }} >=
+                                {{ activeStrategyData[StrategyID]["MinWeight_Sell"] }} 
+                                </td>
+                                <td></td>
+                            </tr>
+                            <tr>
+                                <th>Id</th>
+                                <th>Indicator Type</th>
+                                <th>Input</th>
+                                <th>Weight</th> 
+                                <th>Trade</th> 
+                                <th>Condition Values</th>
+                                <th>Trigger</th>
+                                <th>Delta</th>            
+                                <th>Factor</th>  
+                            </tr>
+                        </thead>    
+                        <tbody> 
+                            <tr></tr>
+                            {%for dataStrategy in activeStrategyData[StrategyID]["data"]["Sell"] %}   
+                                <tr>
+                                    <td> {{ dataStrategy }} </td>  
+                                    {%if activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Type"] == "AvrageCost" %} 
+                                    <td>Average Cost</td>
+                                    {%elif activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Type"] == "AvrageEntry" %} 
+                                    <td>Average Entry</td>
+                                    {%elif activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Type"] == "AvrageExit" %} 
+                                    <td>Average Exit</td>
+                                    {%elif activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Type"] == "F&G" %} 
+                                    <td>Fear & Gread</td>
+                                    {%else%}
+                                    <td>{{ activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Type"] }}</td>
+                                    {%endif%}
+
+                                    <td>
+                                        {%if activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Value"] > 0 %}
+                                        {{ activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Value"] }}x {{ activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Interval"] }}
+                                        {%else%}
+                                        /
+                                        {%endif%}
+                                    </td>
+
+                                    <td>
+                                        {{ activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Weight"] }} =
+                                        {{ activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["WeightActual"] }}
+                                    </td>
+                                    {% if activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Blocking Trade"] %}
+                                        <td class="red">BLOCKED</td>
+                                    {%else%}
+                                        <td class="green">ENABLED</td>
+                                    {%endif%}                                    
+                                    <td>
+                                        {{ activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["textDisplay"] }} <br>
+                                        {{ activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["valToCompare"] }}
+                                        {% if "Above" == activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Comparator"]  %} > {%else%} < {% endif %}
+                                        {{ activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Trigger Offset"] }}
+                                    </td>  
+                                    <td>{{ activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Trigger"] }}</td>    
+                                    <td>{{ activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Delta"] }}</td>   
+                                    
+                                    {%if  activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Enable"] %}
+                                        <td>
+                                    {%else%}
+                                        <td class="crossed"> X 
+                                    {%endif%}
+                                            {{ activeStrategyData[StrategyID]["data"]["Sell"][dataStrategy]["Factor"] }} %
+                                        </td>                              
+                                </tr>
+                            {% endfor %}  
+                        </tbody>
+                    </table>
+                </div>
+                </section> 
+                {% endfor %}
+            </div>
+        </main>
+        <footer>
+             {% include 'footer.html' %}
+        </footer>
+    </div> 
+    <script src="{{ url_for('static', filename='strategyStatus.js') }}"></script>
+    </body>
+</html>

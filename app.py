@@ -15,7 +15,8 @@ from src import ( #For variables it has to be seperate for actualy sharing them
     my_balances,
     websocetCmds,
     streamCmds,
-    passToFlask
+    passToFlask,
+    settings_class
 )
 
 import threading
@@ -44,11 +45,6 @@ logger.addHandler(file_handler)
 #threads event
 threads_shutDown_Event = threading.Event()
 
-#Populate variables    
-basicSettings = src.loadBsettings()
-strategySettings = src.loadStrSettings()
-
-
 #--time vars
 timeAppStart = 0
 timePing = 0
@@ -60,7 +56,7 @@ def cleanup_function():
     src.shutDown()
     threads_shutDown_Event.set()
     src.disconnectAPI()
-    time.sleep(basicSettings["websocetManageLoopRuntime"] + basicSettings["klineStreamLoopRuntime"] +1)
+    time.sleep(settings_class.get("websocetManageLoopRuntime") + settings_class.get("klineStreamLoopRuntime") +1)
 
 # Register the cleanup_function to be called on exit
 atexit.register(cleanup_function)
@@ -69,8 +65,8 @@ atexit.register(cleanup_function)
 #Server Flask app
 app = Flask(__name__)
 app.config['SECRET_KEY'] = b'_5#y2L"F4Q8z\n\xec]/' # A secret key is required for flashing
-app.config['SIMPLELOGIN_USERNAME'] = basicSettings["user"]
-app.config['SIMPLELOGIN_PASSWORD'] = basicSettings["password"]
+app.config['SIMPLELOGIN_USERNAME'] = settings_class.get("user")
+app.config['SIMPLELOGIN_PASSWORD'] = settings_class.get("password")
 SimpleLogin(app)# Register the blueprint containing the routes
 app.register_blueprint(src.bp)
 
@@ -81,10 +77,8 @@ log.disabled = True
 #---------------------main task for data pull and strategy-----------------
 def main():
     #Load settings for testing 
-    global basicSettings, strategySettings, timePing, passToFlask
-    basicSettings = src.loadBsettings()
-    strategySettings = src.loadStrSettings()
-    try:
+    global timePing, passToFlask
+    if True: #try:
         now_utc = datetime.now(timezone.utc)
         timestamp_seconds = int(now_utc.timestamp())                
 
@@ -92,11 +86,11 @@ def main():
         passToFlask["timeAppRunning"] = timedelta(seconds = timestamp_seconds - timeAppStart)          
         
         #Server conection managment for WebbSocet
-        if (timePing  < (timestamp_seconds - int(basicSettings["pingUpdate"] *60)) or 
+        if (timePing  < (timestamp_seconds - int(settings_class.get("pingUpdate") *60)) or 
             timePing == 0 
             ): # check time last ping
             timePing = timestamp_seconds
-            print(f"Running for {timedelta(seconds = timestamp_seconds - timeAppStart)} | Num of strategies: {len(strategySettings)}") 
+            print(f"Running for {timedelta(seconds = timestamp_seconds - timeAppStart)}") 
             conManageResponse = src.pingWebsocet()
             logger.debug(f"Server Websocet ping response {conManageResponse}")
             if len(my_balances) == 0: #Refresh user data if there is no balances value
@@ -111,8 +105,8 @@ def main():
         #Run strategies        
         src.strategyRun()
 
-    except Exception as e: 
-        logger.error(f"Main error: {e}")
+    #except Exception as e: 
+    #    logger.error(f"Main error: {e}")
 
 # Initialization -----------------------------------------------------
 def _initialize():
@@ -163,7 +157,7 @@ def RUN_StreamLoop():
         logger.info(f"RUN_StreamLoop() Started") 
         try:
             task = loop2.create_task(src.klineStream(
-                loopRuntime=basicSettings["klineStreamLoopRuntime"],
+                loopRuntime=settings_class.get("klineStreamLoopRuntime"),
                 maxNoData=5,
                 initialIntervalIndex=1
             ))
@@ -208,7 +202,7 @@ def RUN_WebsocetLoop():
         #Runn loop for Websocet_loop   
         try:
             task = loop3.create_task(src.websocetManage(
-                loopRuntime=basicSettings["websocetManageLoopRuntime"]
+                loopRuntime=settings_class.get("websocetManageLoopRuntime")
             ))        
             loop3.run_until_complete(task)
         except Exception as e:
@@ -242,8 +236,8 @@ def RUN_flaskApp():
     # because the reloader starts a new process which can cause issues with threads.
     app.run(debug=False, 
             use_reloader=False,
-            host=basicSettings["host"],
-            port=basicSettings["Port"]
+            host=settings_class.get("host"),
+            port=settings_class.get("Port")
             )
     logger.info("RUN_flaskApp() Thread Stopped")
     print("RUN_flaskApp() Thread Stopped")
@@ -285,7 +279,7 @@ if __name__ == "__main__":
                 main() #Call main function
             else:
                 print("main() No connection") 
-            time.sleep(basicSettings["strategyUpdate"]) #Will sleap for strategy update time
+            time.sleep(settings_class.get("strategyUpdate")) #Will sleap for strategy update time
             FirstRun = False
     except KeyboardInterrupt:
         print("Program terminated by user...")

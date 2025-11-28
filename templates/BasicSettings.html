@@ -1,0 +1,182 @@
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">        
+        <title>Basic settings</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+        <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+        <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    </head>
+    <body>  
+        <div class="sidenav"> 
+            <a class="navbutton" href="{{ url_for('flaskRoute.display_logs') }}"> LOGS </a>
+        </div> 
+    <div class="wrapper">  
+        <header>
+            <div>
+             <b>Basic BOT settings</b>
+             {{usrMsg}}
+             </div>
+        </header>
+        <main> 
+            <div class="left-div">
+            <form action="/BasicSettings" method="post" onsubmit="return confirm('Confirm action');">        
+                <div  id="BasicSettings">
+                    <table border = "1">   
+                        <thead>
+                            <th>Setting</th>
+                            <th>Value</th>
+                        </thead>
+                        <tbody>                        
+                            <tr>
+                                <td>Refresh time for historical data</td>   
+                                <td>
+                                    <input type="number" step="1" min="1" name="histDataUpdate" value="{{ my_basicSettings.histDataUpdate }}"> min     
+                                </td>                     
+                            </tr>  
+                            <tr>
+                                <td>Number of candles loaded for history data</td>
+                                <td>
+                                    <input type="number" step="1" min="1" max="5000" name="numOfHisCandles" value="{{ my_basicSettings.numOfHisCandles }}"> 
+                                </td>                           
+                            </tr>
+                            <tr>
+                                <td>Refresh time for strategy execution</td>
+                                <td>
+                                    <input type="number" step="1" min="5" name="strategyUpdate" value="{{ my_basicSettings.strategyUpdate }}"> s
+                                </td>    
+                            </tr>
+                            <tr>
+                                <td>Loop time for stream watchdog</td>
+                                <td>
+                                    <input type="number" step="0.1" min="0.1" name="klineStreamLoopRuntime" value="{{ my_basicSettings.klineStreamLoopRuntime }}"> s
+                                </td>    
+                            </tr>
+                            <tr>
+                                <td>Loop time for Websocet watchdog</td>
+                                <td>
+                                    <input type="number" step="0.1" min="0.1" name="websocetManageLoopRuntime" value="{{ my_basicSettings.websocetManageLoopRuntime }}"> s
+                                </td>    
+                            </tr>
+                            <tr>
+                                <td>Time for Open trade aging (LIVE only)</td>
+                                <td>
+                                    <input type="number" step="1" min="30" name="liveTradeAging" value="{{ my_basicSettings.liveTradeAging }}"> s
+                                </td>    
+                            </tr>
+                            <tr>
+                                <td>Server ping interval</td>
+                                <td>
+                                    <input type="number" step="1" min="1" name="pingUpdate" value="{{ my_basicSettings.pingUpdate }}"> min
+                                </td>    
+                            </tr> <tr>
+                                <td> 
+                                    Telegram chat ID
+                                </td>
+                                <td>                                                                       
+                                    <label class="custom-checkbox-container">
+                                    Use telegram
+                                    <input type="checkbox"  id="useTelegram" name="useTelegram" {% if my_basicSettings.useTelegram %}checked{% endif %}>  
+                                    <span class="checkmark"></span>
+                                    </label>
+                                    <input class="long" type="text" name="telegram_chatID" value = "{{ my_basicSettings.telegram_chatID }}" >
+                                </td>                           
+                            </tr>  
+                            <tr>
+                                <td>Telegram TOKEN</td>
+                                <td>
+                                    <input class="long" type="password" name="telegram_TOKEN" value = "{{ my_basicSettings.telegram_TOKEN }}" >
+                                </td>                           
+                            </tr>
+                            <tr>
+                                <td colspan="2">Settings below require application restart after saving</td>
+                            </tr>    
+                            <tr>
+                                <td>User</td>
+                                <td>
+                                    <input class="long" type="text" name="user" value = "{{ my_basicSettings.user }}" >
+                                </td>                           
+                            </tr>   
+                            <tr>
+                                <td>password</td>
+                                <td>
+                                    <input class="long" type="password" name="password" value = "{{ my_basicSettings.password }}" >
+                                </td>                           
+                            </tr>  
+                            <tr>
+                                <td>API connection timeout</td>
+                                <td>
+                                    <input type="number" step="100" min="1000" name="timeout" value="{{ my_basicSettings.timeout }}"> ms
+                                </td>    
+                            </tr> 
+                            <tr>
+                                <td>API reconnection delay</td>
+                                <td>
+                                    <input type="number" step="1"  min="1" name="reconnect_delay" value="{{ my_basicSettings.reconnect_delay }}"> s
+                                </td>    
+                            <tr>
+                                <td>Host IP</td>
+                                <td>
+                                    <input class="long" type="text" name="host" value = "{{ my_basicSettings.host }}" >
+                                </td>                           
+                            </tr>   
+                            <tr>
+                                <td>Port</td>
+                                <td>
+                                    <input class="long" type="number" step="1" min="1" name="Port" value = "{{ my_basicSettings.Port }}" >
+                                </td>                           
+                            </tr>    
+                            <tr>
+                                <td>API KEY</td>
+                                <td>
+                                    <input class="long" type="text" name="API_KEY" value = "{{ my_basicSettings.API_KEY }}" >
+                                </td>                           
+                            </tr>   
+                            <tr>
+                                <td>API SECRET</td>
+                                <td>
+                                    <input class="long" type="password" name="API_SECRET" value = "{{ my_basicSettings.API_SECRET }}" >
+                                </td>                           
+                            </tr>    
+                            
+                            <tr>
+                                <td>                                       
+                                </td>
+                                <td >                                 
+                                    <button type="submit" name="ActionButton" value="SAVE" >SAVE DATA</button>                         
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table> 
+                    <p>{{data}}</p>                
+                </div>                
+            </form>  
+            </div>
+            <div class="right-div">   
+            <table>
+                <thead>
+                    <th>Pair</th>
+                    <th>Min qty</th>
+                    <th>Max qty</th>
+                    <th>Order dec. places</th>
+                </thead>
+                <tbody>
+                {%for Pair in exchange_info_data %} 
+                    <tr>
+                        <td>{{Pair}}</td>
+                        <td>{{ exchange_info_data[Pair]["min_qty"] }}</td>
+                        <td>{{ exchange_info_data[Pair]["max_qty"] }}</td>
+                        <td>{{ exchange_info_data[Pair]["order_precision"] }}</td>
+                    </tr>
+                  
+                {% endfor %}
+                </tbody>
+            </table>
+            </div> 
+        </main>
+        <footer>
+             {% include 'footer.html' %}     
+        </footer>
+    </div> 
+    </body>
+</html>
