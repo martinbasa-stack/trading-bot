@@ -3,7 +3,7 @@
 
 # 🚀 Advanced DCA Algorithmic Trading Bot
 
-### **Version 1.0**
+### **Version 1.1**
 
 Automated algorithmic trading bot using an **Advanced DCA (Dollar-Cost Averaging) strategy**.
 The bot buys dips and sells pumps with optional **dynamic order adjustment**, indicator-based blocking, integrated Telegram alerts, multi-threaded runtime, and a Flask UI dashboard.
@@ -91,18 +91,41 @@ A cleaner, fully OOP version is planned — see the roadmap below.
 /project
 │──/config
     │──settings.json      
-    │──strategies.json    #All strategies
-│──/data                  #data generated and managed by program
-│──/logs                  #logg files
+    │──strategies.json      #All strategies
+│──/data                    #data generated and managed by program
+│──/logs                    #logg files
 |──/src
-    ├── binanceAPI.py     # WebSocket management, REST API, Telegram integration
+    ├── /fear_gread         # FearAndGread class (updates, data storing,..) 
+        ├── fear_gread.py
+        ├── models.py
+    ├── /flask              # Flask blueprints
+        ├── form_utils.py   # Functions for form to dict transorms
+        ├── routes.py     
+        ├── views.py        # Data generation for passing to flask
+    ├── /history            # Historical kLine data managment
+        ├── manager.py      # class created oneced in __init__.py
+        ├── models.py
+        ├── storage.py      # File modification
+    ├── /record_high_low    # Managment of last high low data after trade
+        ├── highlow.py      # Class
+        ├── models.py
+    ├── /settings           # General and strategy settings managment
+        ├── changes.py      # Detecting changes made after modification
+        ├── general.py      # Class for general settings
+        ├── strategies.py   # Class for strategy setting
+    ├── /telegram           # Prepared
+    ├── /trades             # Managing trade tables
+        ├── manager.py      # Class
+        ├── models.py
+        ├── storage.py
+    ├── /utils
+        ├── storage.py      # File modification of .json used by classes
+    ├── binanceAPI.py       # WebSocket management, Stream, Telegram integration
     ├── constants.py  
-    ├── flaskRoute.py     # Flask routes, templates, static files
-    ├── settings.py       # Global settings + strategy settings manager
-    ├── strategy.py       # Strategy engine, trade table, historical data logic
-├── /static           # CSS/JS files
-├── /templates        # Flask templates
-├── app.py            # main start
+    ├── strategy.py         # Strategy engine, data logic
+├── /static                 # CSS/JS files
+├── /templates              # Flask templates
+├── app.py                  # main start
 └── README.md
 ```
 ## Modules Overview
@@ -116,23 +139,34 @@ A cleaner, fully OOP version is planned — see the roadmap below.
 
 * Sends Telegram notifications
 
-``flaskRoute.py``
+``/flask``
 
 * All Flask UI routes
 
 * Serves /templates and /static
 
-* Updates setting and sends to ``settings.py``
+* Fetch data for updates and delivers to responsable class
 
 * Manages adding/removing strategies
 
-``settings.py``
+``/settings``
 
 * Loads/Saves general settings
  
 * Loads/Saves strategy settings
 
 * Logs every change to settings
+* Delivers data from settings to other classes
+    * list of IDs
+    * list of all Interval used etc.
+
+`/trades`
+* Manages trade tables
+
+* Servs trades for trades
+    * Update closed ones
+
+* Purges old data files
 
 ``strategy.py``
 
@@ -140,11 +174,28 @@ A cleaner, fully OOP version is planned — see the roadmap below.
 
 * Determines buy/sell signals
 
-* Manages trade table and order execution
-
+`/history`
 * Loads/Saves historical data
 
-* Purges old data files
+* `run()` function takes care for data refresh
+
+    * Purges old data files
+    * request for new data
+
+`/record_high_low`
+
+* Manages high and low value for each strategy for dip/pump trigger detection
+
+* Responsible for modification and reste of set values
+
+* Manages permanent storage to `.json`
+
+
+`/fear_gread`
+
+* Manages storage of Fear and Gread data
+
+* Fetch new data from Alternative.me
 
 
 ---
@@ -395,10 +446,22 @@ Thank you for supporting open-source algorithmic trading tools! ❤️
 
 ---
 
-# 📌 Version 1.0 Notice & Roadmap
+# 📌 Version 1.1 Notice & Roadmap
 
-This is **Version 1.0**, my first full Python trading system.
-While it works reliably, some parts are still not fully Pythonic.
+This is **Version 1.1**, my first full Python trading system.
+While it works reliably, some parts are still not fully Pythonic. It is one step in the right dirrection.
+
+### Updates
+
+* The program functionality is still the same only program structure is changed
+* Better file organisation
+* Separation of some functions to classes
+    * History manager
+    * Trade manager
+    * Settings managment 
+    * Strategy managment
+    * And some smaller ones 
+
 
 ### Current shortfalls
 
@@ -408,15 +471,14 @@ While it works reliably, some parts are still not fully Pythonic.
 * Some inconsistent naming
 * Early-stage architecture
 
-### Planned Improvements (v1.1+)
+### Planned Improvements (v1.2+)
 
 * Full OOP rewrite (`Trade`, `Position`, `Strategy`, `Exchange`)
+* `strategy.py` and `binance_API` module still needs complete rework 
 * Pydantic models for config
-* Better logging
 * Plugin-based strategy system
 * Built-in backtester
 * Improved web UI
-* Async WebSocket support
 * Cleaner file structure
 
 ### Known Issues
