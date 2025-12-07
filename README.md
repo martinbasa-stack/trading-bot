@@ -24,10 +24,9 @@ A cleaner, fully OOP version is planned — see the roadmap below.
 * [📝 Requirements](#requirements)
 * [⚙️ Configuration](#️configuration)
 * [🤝 Donations](#donations)
-* [📌 Version 1.0 Notice & Roadmap](#version-10-notice--roadmap)
+* [📌 Version 1.2 Notice & Roadmap](#version-12-notice--roadmap)
 
 ---
-
 # ✨ Features
 
 ### ✔ Advanced DCA Strategy
@@ -64,6 +63,8 @@ A cleaner, fully OOP version is planned — see the roadmap below.
 
 ---
 
+<a id="#️program-architecture"></a>
+
 # ⚙️ Program Architecture
 
 ```
@@ -89,113 +90,176 @@ A cleaner, fully OOP version is planned — see the roadmap below.
 
 ```
 /project
-│──/config
-    │──settings.json      
-    │──strategies.json      #All strategies
-│──/data                    #data generated and managed by program
-│──/logs                    #logg files
-|──/src
-    ├── /fear_gread         # FearAndGread class (updates, data storing,..) 
-        ├── fear_gread.py
-        ├── models.py
-    ├── /flask              # Flask blueprints
-        ├── form_utils.py   # Functions for form to dict transorms
-        ├── routes.py     
-        ├── views.py        # Data generation for passing to flask
-    ├── /history            # Historical kLine data managment
-        ├── manager.py      # class created oneced in __init__.py
-        ├── models.py
-        ├── storage.py      # File modification
-    ├── /record_high_low    # Managment of last high low data after trade
-        ├── highlow.py      # Class
-        ├── models.py
-    ├── /settings           # General and strategy settings managment
-        ├── changes.py      # Detecting changes made after modification
-        ├── general.py      # Class for general settings
-        ├── strategies.py   # Class for strategy setting
-    ├── /telegram           # Prepared
-    ├── /trades             # Managing trade tables
-        ├── manager.py      # Class
-        ├── models.py
-        ├── storage.py
-    ├── /utils
-        ├── storage.py      # File modification of .json used by classes
-    ├── binanceAPI.py       # WebSocket management, Stream, Telegram integration
-    ├── constants.py  
-    ├── strategy.py         # Strategy engine, data logic
-├── /static                 # CSS/JS files
-├── /templates              # Flask templates
-├── app.py                  # main start
+│
+├── /config
+│   ├── settings.json          # General application settings
+│   ├── strategies.json        # All stored strategies
+│   └── strategies.bak         # Backup of strategies
+│
+├── /data                      # Program-generated and managed data
+├── /logs                      # Log files
+│
+├── /src
+│   ├── /binance               # Binance API communication layer
+│   │   ├── /stream
+│   │   │   ├── manager.py     # Stream connection manager & data storage interface
+│   │   │   ├── models.py      # Stream-related dataclasses
+│   │   │   ├── stream.py      # Stream subscription, reconnection, etc.
+│   │   │   └── thread.py      # Stream thread startup
+│   │   │
+│   │   └── /websocket
+│   │       ├── connection.py # WebSocket connection, reconnection, send/receive logic
+│   │       ├── manager.py    # WebSocket manager for command routing & formatting
+│   │       ├── models.py
+│   │       └── thread.py     # WebSocket thread startup
+│   │
+│   ├── /flask                 # Flask web interface
+│   │   ├── form_utils.py     # Form-to-dict / form-to-dataclass converters
+│   │   ├── log_utils.py
+│   │   ├── routes.py         # Flask routes
+│   │   └── views.py          # Data preparation for templates
+│   │
+│   ├── /market_history       # Historical kline data management
+│   │   ├── manager.py        # Local kline data manager
+│   │   ├── models.py
+│   │   └── storage.py        # CSV file operations for kline data
+│   │
+│   ├── /settings              # General and strategy settings
+│   │   ├── changes.py         # Detects changes between old and new settings
+│   │   ├── general.py         # General settings class
+│   │   ├── strategy_convertors.py  # Dict <-> Dataclass converters
+│   │   └── strategies.py      # Strategy settings manager
+│   │
+│   ├── /strategy              # Main trading strategy logic
+│   │   ├── /assets            # Asset management
+│   │   │   ├── analyzer.py    # Asset analysis logic
+│   │   │   ├── manager.py     # Asset balance manager
+│   │   │   └── models.py
+│   │   │
+│   │   ├── /fear_greed        # Fear & Greed index handling
+│   │   │   ├── fear_greed.py
+│   │   │   └── models.py
+│   │   │
+│   │   ├── /indicators        # Technical indicator computations
+│   │   │   ├── compute.py     # Indicator calculations (TA-Lib)
+│   │   │   └── models.py
+│   │   │
+│   │   ├── /record_HL         # Last high/low tracking after trades
+│   │   │   ├── manager.py     # High/Low record manager
+│   │   │   └── models.py
+│   │   │
+│   │   ├── /trades            # Trade history and trade tables
+│   │   │   ├── analyzer.py    # Trade analysis (PnL, averages, etc.)
+│   │   │   ├── manager.py     # Trade data manager (store, update, save)
+│   │   │   ├── models.py
+│   │   │   └── storage.py     # CSV file operations for trades
+│   │   │
+│   │   ├── /utils
+│   │   │   └── storage.py     # JSON storage utilities
+│   │   │
+│   │   ├── dca.py             # Core DCA trading logic & trigger generation
+│   │   ├── models.py
+│   │   └── run.py             # Strategy execution loop
+│   │
+│   ├── /telegram              # Telegram notification module
+│   │   └── telegram.py
+│   │
+│   └── constants.py           # Global constants
+│
+├── /static                    # Frontend static files
+│   └── /CSS                   # Stylesheets
+│
+├── /templates                 # Flask HTML templates
+│   └── /segments              # Reusable template fragments
+│
+├── app.py                     # Main application entry point
+├── /test                      # Unit and integration tests
 └── README.md
+
 ```
 ## Modules Overview
-``binanceAPI.py``
+``/binanceAPI``
 
-* Manages Stream/WebSocket communication with Binance
+* ``/stream`` Manages Stream communication with Binance
 
-* Sends trade orders
+* ``/websocket`` Manages WebSocket communication with Binance
+
+    * Sends trade orders
 
 * Performs reconnection logic
 
-* Sends Telegram notifications
 
 ``/flask``
 
-* All Flask UI routes
+* ``routes.py`` All Flask UI routes
+    * Serves /templates and /static
 
-* Serves /templates and /static
+* ``views.py`` Generate data for UI 
 
-* Fetch data for updates and delivers to responsable class
 
-* Manages adding/removing strategies
+`/marke_history`
+* Loads/Saves kLine historical data
+* Manages kLine historical ``.csv`` files
+* Delivers kLine tables to other classes for computing
+* `run()` function takes care for data refresh
+    * Purges old data files
+    * request for new data
 
 ``/settings``
 
-* Loads/Saves general settings
+* ``general.py`` Loads/Saves general settings
  
-* Loads/Saves strategy settings
+* ``strategies.py`` Loads/Saves strategy settings
+    * Manages adding/removing strategies
 
 * Logs every change to settings
 * Delivers data from settings to other classes
     * list of IDs
     * list of all Interval used etc.
 
-`/trades`
-* Manages trade tables
 
-* Servs trades for trades
-    * Update closed ones
 
-* Purges old data files
-
-``strategy.py``
+``/strategy``
 
 * Core DCA strategy logic
 
-* Determines buy/sell signals
+* `/assets`
+    * Manages account balances
+    * ``analyzer.py`` Calculates available amount of assets.
 
-`/history`
-* Loads/Saves historical data
 
-* `run()` function takes care for data refresh
+* `/fear_gread`
+    * Manages storage of Fear and Gread data
+    * Fetch new data from Alternative.me
 
+* `/indicators`
+    * Comput triggers and buy factor from indicators
+
+* `/record_JL`
+    * Manages high and low value for each strategy for dip/pump trigger detection
+    * Manages permanent storage to `.json`
+
+* `/trades`
+    * Manages trade tables
+    * Servs trades for execution
+        * Update closed ones
     * Purges old data files
-    * request for new data
+    * ``analyzer.py`` get PnL and other analyzes from trade tables.
 
-`/record_high_low`
+* ``dca.py``
+    * Gathers all data and compute from other clases and generates a ``Trade``
+    * Serves all trigger data for UI display.
 
-* Manages high and low value for each strategy for dip/pump trigger detection
+* ``run.py`` 
+    * checks data availability
+    * runs trough all strategiess
+    * sends open ``Trade`` for execution
 
-* Responsible for modification and reste of set values
-
-* Manages permanent storage to `.json`
+``/telegram`` Sends message to bot
 
 
-`/fear_gread`
 
-* Manages storage of Fear and Gread data
 
-* Fetch new data from Alternative.me
 
 
 ---
@@ -445,50 +509,55 @@ Thank you for supporting open-source algorithmic trading tools! ❤️
 
 
 ---
+<a id="#version-12-notice--roadmap"></a>
 
-# 📌 Version 1.1 Notice & Roadmap
+# 📌 Version 1.2 Notice & Roadmap
 
-This is **Version 1.1**, my first full Python trading system.
-While it works reliably, some parts are still not fully Pythonic. It is one step in the right dirrection.
+This is **Version 1.2**, my first full Python trading system. The python part is now full OOP.
 
 ### Updates
 
-* The program functionality is still the same only program structure is changed
 * Better file organisation
-* Separation of some functions to classes
-    * History manager
-    * Trade manager
-    * Settings managment 
-    * Strategy managment
-    * And some smaller ones 
+* Full OOP rewrite
+* Pydantic models
+* Improved web UI
+* Improved connection managment with Binance API
 
 
 ### Current shortfalls
 
-* Too many nested dictionaries
-* Long monolithic functions
-* Limited class usage
-* Some inconsistent naming
-* Early-stage architecture
+* No backtester
+* No charts
 
-### Planned Improvements (v1.2+)
 
-* Full OOP rewrite (`Trade`, `Position`, `Strategy`, `Exchange`)
-* `strategy.py` and `binance_API` module still needs complete rework 
-* Pydantic models for config
-* Plugin-based strategy system
+### Planned Improvements (v1.3+)
+
 * Built-in backtester
+* Add chart representations
+* Add Simple Earn asset managment
 * Improved web UI
-* Cleaner file structure
 
 ### Known Issues
-#### 1. Binance API WebSocket Reconnect Issue
+#### 1. Binance API Stream WebSocket Reconnect Issue
 
-After losing connection, Binance sometimes refuses re-subscription to the same stream after reconnecting.
+After losing connection, Binance refuses re-subscription to the same stream after reconnecting. 
+Found that the ``global_stream_connections.stream_connections_map`` is still populated with old streams eaven after disconnecting and claering the ``connection`` and ``client`` class.
+
 
 **Temporary Solution:**
+Import the global variable and delete streams.
+```python
+from binance_common.websocket import global_stream_connections
 
-The bot automatically switches to a different interval when reconnecting, which forces Binance to accept the new subscription.
+self._strem_map = global_stream_connections.stream_connections_map
+
+def _global_cleanup(self):
+    try:
+        for stream in list(self._strem_map.keys()):
+            del self._strem_map[stream]
+    except Exception as e:
+        self._logger.error(f"StreamWorker error {stream}: {e}")
+```
 
 Thanks for your patience as this evolves into a polished, professional project.
 
