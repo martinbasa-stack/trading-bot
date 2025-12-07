@@ -1,0 +1,38 @@
+<html>
+    <head>
+        <title>Logs</title>
+        {% include 'segments/_header.html' %}
+    </head>
+    <body>
+        <div class="sidenav"> 
+            <div class="nav_top">
+            <form action="/logs" method="POST" >
+                <button class="invert" type="submit" name="ActionButton" value="main" >main.log</button>
+                <button class="invert" type="submit" name="ActionButton" value="app" >app.log</button>      
+                <button class="invert" type="submit" name="ActionButton" value="API" >API.log</button>      
+                <button class="invert" type="submit" name="ActionButton" value="settings" >settings.log</button>      
+                <button class="invert" type="submit" name="ActionButton" value="strategy" >strategy.log</button> 
+            </form>
+            </div>
+            {% include 'segments/_nav_side.html' %}
+        </div>    
+    <div class="wrapper">
+        <header>
+            <div>
+             <b>Log reader for {{log_file_path}}</b>
+             </div>
+        </header>
+        <main>          
+            <div class="log-container">
+                {% for line in log_lines %}
+                    {{ line | safe }}<br>
+                {% endfor %}
+            </div>                    
+        </main>
+        <footer>
+            {% include 'segments/_footer.html' %}     
+        </footer>
+    </div>
+    
+    </body>
+</html>

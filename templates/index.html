@@ -1,0 +1,55 @@
+<html>
+    <head>
+        <title>Trading bot</title>
+        {% include 'segments/_header.html' %}
+    </head>
+    <body>
+        <div class="sidenav"> 
+            <div class="nav_top">
+                
+            </div>
+            {% include 'segments/_nav_side.html' %}
+        </div>
+    <div class="wrapper">
+        <header>
+            <div>
+             <b>ASSET BALANCE</b>
+             </div>
+        </header>
+        <main>   
+            
+            <div class="center-div">
+                <table class="wrap" border = "1">   <!-- ---------------------------------BALANCE TABLE  -->
+                    <thead>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Available</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>  
+                        <tbody>
+                        {%for Balance in MyBalance %}
+                        <tr >
+                            <td padding = "10px">
+                                <b> {{ Balance }} </b>
+                            </td>
+                            <td>
+                                {{ MyBalance[Balance]["Available"]}}  
+                            </td>
+                            <td>
+                                {{ MyBalance[Balance]["Total"] }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>  
+        </main>
+        <footer>
+            {% include 'segments/_footer.html' %}    
+        </footer>
+    </div>
+    
+    <script src="{{ url_for('static', filename='index.js') }}"></script>
+    </body>
+</html>
