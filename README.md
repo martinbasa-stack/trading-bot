@@ -3,28 +3,27 @@
 
 # 🚀 Advanced DCA Algorithmic Trading Bot
 
-### **Version 1.2**
+### **Version 1.4**
 
 Automated algorithmic trading bot using an **Advanced DCA (Dollar-Cost Averaging) strategy**.
-The bot buys dips and sells pumps with optional **dynamic order adjustment**, indicator-based blocking, integrated Telegram alerts, multi-threaded runtime, and a Flask UI dashboard.
+The bot buys dips and sells pumps with optional **dynamic order adjustment**, indicator-based triggers, backtesting with intracandle price simulation, basic charting, integrated Telegram alerts, multi-threaded runtime, and a Flask UI dashboard.
 
-This is my **first major Python project**, and while fully functional, it still contains some unpolished areas.
-A cleaner, fully OOP version is planned — see the roadmap below.
+This is my **first major Python project**, and while fully functional, it may contains some unpolished areas.
 
 ---
 
 # 📚 Table of Contents
 
-* [✨ Features](#features)
-* [⚙️ Program Architecture](#️program-architecture)
-* [📁 Project Structure](#project-structure)
-* [🧠 Strategy Logic](#strategy-logic)
-* [🖥️ Flask Web UI](#️flask-web-ui)
-* [📥 Installation](#installation)
-* [📝 Requirements](#requirements)
-* [⚙️ Configuration](#️configuration)
-* [🤝 Donations](#donations)
-* [📌 Version 1.2 Notice & Roadmap](#version-12-notice--roadmap)
+* [✨ Features](#-features)
+* [⚙️ Program Architecture](#️-program-architecture)
+* [📁 Project Structure](#-project-structure)
+* [🧠 Strategy Logic](#-strategy-logic)
+* [🖥️ Flask Web UI](#️-flask-web-ui)
+* [📥 Installation](#-installation)
+* [📝 Requirements](#-requirements)
+* [⚙️ Configuration](#️-configuration)
+* [🤝 Donations](#-donations)
+* [📌 Version 1.4 Notice & Roadmap](#-version-14-notice--roadmap)
 
 ---
 # ✨ Features
@@ -35,6 +34,16 @@ A cleaner, fully OOP version is planned — see the roadmap below.
 * Adaptive order sizing using configurable indicators
 * Dynamic blocking of trades based on technical conditions
 * Independent BUY and SELL indicator systems
+
+### ✔ Backtester
+
+* Check your strategy on historical data
+* Simulate intra candle data changes by moving price in pumps/dips steps
+
+### ✔ Charts
+
+* ``chartjs`` Basic charts for indicator display
+* Trades visible on charts
 
 ### ✔ Full Multi-Threaded Runtime
 
@@ -62,8 +71,6 @@ A cleaner, fully OOP version is planned — see the roadmap below.
 * Auto-cleanup of old data
 
 ---
-
-<a id="#️program-architecture"></a>
 
 # ⚙️ Program Architecture
 
@@ -100,6 +107,10 @@ A cleaner, fully OOP version is planned — see the roadmap below.
 ├── /logs                      # Log files
 │
 ├── /src
+│   ├── /backtester            # Backtester logic
+│   │   ├── main.py            # Runing the backtester
+│   │   ├── models.py          
+│   │   └── sequencer.py       # Logic for time and history candle symulation
 │   ├── /binance               # Binance API communication layer
 │   │   ├── /stream
 │   │   │   ├── manager.py     # Stream connection manager & data storage interface
@@ -113,16 +124,27 @@ A cleaner, fully OOP version is planned — see the roadmap below.
 │   │       ├── models.py
 │   │       └── thread.py     # WebSocket thread startup
 │   │
-│   ├── /flask                 # Flask web interface
+│   ├── /flask                # Flask web interface
+│   │   ├── /chart            # Chart data formating
+│   │   |   ├── format.py     # Format all
+│   │   |   ├── indicators.py # Compute indicator values and format them for chart
+│   │   |   └── models.py     
 │   │   ├── form_utils.py     # Form-to-dict / form-to-dataclass converters
 │   │   ├── log_utils.py
 │   │   ├── routes.py         # Flask routes
 │   │   └── views.py          # Data preparation for templates
 │   │
-│   ├── /market_history       # Historical kline data management
-│   │   ├── manager.py        # Local kline data manager
-│   │   ├── models.py
-│   │   └── storage.py        # CSV file operations for kline data
+│   ├── /market_history       # Historical data managment
+│   │   ├── /price            # kLine price history
+│   │   │   ├── manager.py    # Local kline data manager
+│   │   │   ├── models.py
+│   │   │   └── storage.py    # CSV file operations for kline data
+│   │   │
+│   │   ├── /fear_greed        # Fear & Greed index handling
+│   │   │   ├── fear_greed.py
+│   │   │   └── models.py
+│   │   │
+│   │   └── market.py          # Run function for data check and new data aquisition
 │   │
 │   ├── /settings              # General and strategy settings
 │   │   ├── changes.py         # Detects changes between old and new settings
@@ -167,7 +189,8 @@ A cleaner, fully OOP version is planned — see the roadmap below.
 │   └── constants.py           # Global constants
 │
 ├── /static                    # Frontend static files
-│   └── /CSS                   # Stylesheets
+│   ├── /css                   # Stylesheets
+│   └── /js                    # Java Script
 │
 ├── /templates                 # Flask HTML templates
 │   └── /segments              # Reusable template fragments
@@ -178,6 +201,10 @@ A cleaner, fully OOP version is planned — see the roadmap below.
 
 ```
 ## Modules Overview
+``/backtester``
+
+* Run trough history data and execute trades for backtesting your strategy.
+
 ``/binanceAPI``
 
 * ``/stream`` Manages Stream communication with Binance
@@ -256,11 +283,6 @@ A cleaner, fully OOP version is planned — see the roadmap below.
     * sends open ``Trade`` for execution
 
 ``/telegram`` Sends message to bot
-
-
-
-
-
 
 ---
 
@@ -511,29 +533,23 @@ Thank you for supporting open-source algorithmic trading tools! ❤️
 ---
 <a id="#version-12-notice--roadmap"></a>
 
-# 📌 Version 1.2 Notice & Roadmap
+# 📌 Version 1.4 Notice & Roadmap
 
-This is **Version 1.2**, my first full Python trading system. The python part is now full OOP.
+This is **Version 1.4**, my first full Python trading system. The python part is now full OOP.
 
 ### Updates
 
-* Better file organisation
-* Full OOP rewrite
-* Pydantic models
+* Add charts
 * Improved web UI
 * Improved connection managment with Binance API
-
-
-### Current shortfalls
-
-* No backtester
-* No charts
-
-
-### Planned Improvements (v1.3+)
-
 * Built-in backtester
-* Add chart representations
+
+### Shorfalls 
+
+* Charts are a bit glitch while displaying tooltips.
+
+### Planned Improvements (v1.5+)
+
 * Add Simple Earn asset managment
 * Improved web UI
 
@@ -544,7 +560,7 @@ After losing connection, Binance refuses re-subscription to the same stream afte
 Found that the ``global_stream_connections.stream_connections_map`` is still populated with old streams eaven after disconnecting and claering the ``connection`` and ``client`` class.
 
 
-**Temporary Solution:**
+**Solution:**
 Import the global variable and delete streams.
 ```python
 from binance_common.websocket import global_stream_connections
