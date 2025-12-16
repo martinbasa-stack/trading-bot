@@ -1,0 +1,212 @@
+<table id="generalT_{{strategy.id}}" class="wrap" border = "1"> <!-- Genaral table generation ______________________________________ -->
+    <thead>
+        <tr>
+            <th>
+                <button class="invert" type="submit" name="ActionButton" value="{{strategy.id}}" ><b>SAVE<br>DATA</b></button>
+            </th>
+            <th>
+                <button type="submit" name="ActionButton" value="AddNew" ><b>COPY<br>as NEW</b></button>
+            </th>
+        </tr>
+        <tr>
+            <th colspan="2"> General </th>
+        </tr>
+    </thead>  
+    <tbody> 
+        <tr>
+            <td> Id  </td> 
+            <td>{{ strategy["id"] }}</td>
+        </tr> 
+        <tr>
+            <td>Type</td> 
+            <td>{{ strategy["type"] }}</td>
+        </tr> 
+        <tr>
+            <td id="run"> 
+                <label class="custom-checkbox-container">                                        
+                <input type="checkbox" id="run" name="run" {% if strategy.run %}checked{% endif %}>  
+                <span class="checkmark"></span>
+                RUN
+                </label>
+            </td>
+            <td id="paperTrading"> 
+                <label class="custom-checkbox-container">
+                <input type="checkbox"  id="paperTrading" name="paperTrading" {% if strategy.paperTrading %}checked{% endif %}>  
+                <span class="checkmark"></span>
+                Paper trading
+                </label>
+            </td>
+        </tr>      
+        <tr>
+            <td> Lookback Interval </td>                                     
+            <td id="interval"> 
+                <input type="number" step="1" min="1" max="200" name="NumOfCandlesForLookback" value="{{ strategy.NumOfCandlesForLookback }}"> 
+                <select name="CandleInterval" id="CandleInterval">
+                    <option value="5m" {% if "5m" == strategy.CandleInterval  %}selected{% endif %}>5 min</option>
+                    <option value="15m" {% if "15m" == strategy.CandleInterval  %}selected{% endif %}>15 min</option>
+                    <option value="30m" {% if "30m" == strategy.CandleInterval  %}selected{% endif %}>30 min</option>
+                    <option value="1h" {% if "1h" == strategy.CandleInterval  %}selected{% endif %}>1 h</option>
+                    <option value="2h" {% if "2h" == strategy.CandleInterval  %}selected{% endif %}>2 h</option>
+                    <option value="4h" {% if "4h" == strategy.CandleInterval  %}selected{% endif %}>4 h</option>
+                    <option value="8h" {% if "8h" == strategy.CandleInterval  %}selected{% endif %}>8 h</option>
+                    <option value="12h" {% if "12h" == strategy.CandleInterval  %}selected{% endif %}>12 h</option>
+                    <option value="1d" {% if "1d" == strategy.CandleInterval  %}selected{% endif %}>1 day</option>
+                    <option value="3d" {% if "3d" == strategy.CandleInterval  %}selected{% endif %}>3 day</option>
+                    <option value="1w" {% if "1w" == strategy.CandleInterval  %}selected{% endif %}>1 week</option>
+                    <option value="1M" {% if "1M" == strategy.CandleInterval  %}selected{% endif %}>1 month</option>
+                </select>    
+            </td>
+        </tr>
+        <tr>
+            <td> Minimum time <br> for new trade </td>
+            <td>                
+                <input type="number" step="1" min="1" id="timeLimitNewOrder" name="timeLimitNewOrder" value="{{ strategy.timeLimitNewOrder }}"> s
+            </td>
+        </tr>
+        <tr>
+            <td id="run"> 
+                <label class="custom-checkbox-container">  
+                Only on close                                      
+                <input type="checkbox" id="candleCloseOnly" name="candleCloseOnly" {% if strategy.candleCloseOnly %}checked{% endif %}>  
+                <span class="checkmark"></span>                                        
+                </label>
+            </td>
+            <td id="paperTrading"> 
+                <label class="custom-checkbox-container">
+                Use last trade as Min/Max
+                <input type="checkbox"  id="useLastTradeAsMinMax" name="useLastTradeAsMinMax" {% if strategy.useLastTradeAsMinMax %}checked{% endif %}>  
+                <span class="checkmark"></span>                
+                </label>
+            </td>
+        </tr>  
+        <tr>
+            <td> Decimal places <br> for rounding orders </td>
+            <td>
+                <input type="number" step="1" min="0" id="roundBuySellorder" name="roundBuySellorder" value="{{ strategy.roundBuySellorder }}">  
+            </td>
+        </tr>
+        <!-------------------------------------Asset manager------------------------------------------->
+        <tr> 
+            <th class="manager" colspan="2">Asset managment</th>                
+        </tr>   
+        <tr>
+            <td>
+                Target <br>
+                <select class="selectManager" name="assetManagerTarget" id="assetManagerTarget">
+                    <option value="None">None</option>
+                    <option value="Account">Account balance</option>
+                    <option value="Trades">Trades</option>
+                </select>
+            </td>
+            <td>
+                <span id="assetManagerSymbolText"></span>
+                <select class="selectManager" name="assetManagerSymbol" id="assetManagerSymbol">
+                    <option value="1" id="assetManagerSymbol1">{{ strategy.Symbol1 }}</option>
+                    <option value="2" id="assetManagerSymbol2">{{ strategy.Symbol2 }}</option>
+                </select>
+            </td>
+        </tr>                                
+
+        <tr>
+            <td > Maximum<br> spending asset </td>
+            <td>
+                <input type="number" min="0" step="0.0001"  id="assetManageMaxSpendLimit" name="assetManageMaxSpendLimit" value="0">
+                <span id="assetManageMaxSpendLimitText" ></span>
+            </td>
+        </tr>
+        <tr>
+            <td > Minimum<br> asset to save </td>
+            <td>
+                <input type="number"  min="0" step="0.0001" id="assetManageMinSaveLimit"  name="assetManageMinSaveLimit" value="0">                                       
+                <select name="assetManagePercent" id="assetManagePercent">
+                    <option value="0" >abs</option>
+                    <option value="1" >%</option>
+                </select>
+                <span id="assetManageMinSaveLimitText" ></span>  
+            </td>
+        </tr>
+    </tbody>
+</table>
+<table id="gen_buy_{{strategy.id}}" class="wrap" border = "1"> <!-- Genaral BUY table  ______________________________________ -->
+    <thead>
+        <tr> <!----------------------------BUY Strategies----------------------------->
+            <th class="buyInd" colspan="2">Buy strategy</th>                
+        </tr>   
+    </thead> 
+    <tbody>
+        <tr>
+            <td> Symbol </td> 
+            <td> 
+                <input type="text" id="Symbol1" name="Symbol1" value="{{ strategy.Symbol1 }}">  
+            </td>
+        </tr>
+        <tr>
+            <td>Base buy amount</td>
+            <td>
+                <input type="number" min="0" step="0.0001" id="BuyBase" name="BuyBase" value="{{ strategy.BuyBase }}">
+                <span id="BuyBaseUnit">{{ strategy.Symbol2 }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>Minimum buy amount</td>
+            <td>
+                <input type="number" min="0" step="0.0001" id="BuyMin" name="BuyMin" value="0.0">
+                <span id="BuyMinUnit">{{ strategy.Symbol2 }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td> Dip buy trigger </td>
+            <td>
+                <input type="number" min="0" step="0.01" id="DipBuy" name="DipBuy" value="{{ strategy.DipBuy }}"> % 
+            </td>
+        </tr>
+        <tr>
+            <td> Max factor for <br> dynamic orders </td>
+            <td>
+                <input type="number" min="0" step="0.1" id="BuyMaxFactor"  name="BuyMaxFactor" value="{{ strategy.BuyMaxFactor }}"> % 
+            </td>
+        </tr>
+    </tbody>
+</table>
+    <table id="gen_sell_{{strategy.id}}" class="wrap" border = "1"> <!-- GEneral sell ______________________________________ -->
+    <thead>
+        <tr>
+            <th class="sellInd" colspan="2">Sell strategy</th>             
+        </tr> 
+    </thead>
+    <tbody>
+        <tr> 
+            <td> Symbol </td> 
+            <td> 
+                <input type="text" id="Symbol2" name="Symbol2" value="{{ strategy.Symbol2 }}">  
+            </td> 
+        </tr>  
+        <tr>
+            <td>Base sell amount</td>
+            <td>
+                <input type="number" min="0" step="0.0001" id="SellBase"  name="SellBase" value="{{ strategy.SellBase }}"> 
+                <span id="SellBaseUnit">{{ strategy.Symbol2 }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td>Minimum sell amount</td>
+            <td>
+                <input type="number" min="0" step="0.0001" id="SellMin" name="SellMin" value="0.0">
+                <span id="SellMinUnit">{{ strategy.Symbol2 }}</span>
+            </td>
+        </tr>
+        <tr>
+            <td> Pump sell trigger </td>
+            <td>
+                <input type="number"  min="0" step="0.01"  id="PumpSell" name="PumpSell" value="{{ strategy.PumpSell }}"> % 
+            </td>
+        </tr>
+        <tr>
+            <td> Max factor for <br> dynamic orders </td>
+            <td>
+                <input type="number"  min="0" step="0.1"  id="SellMaxFactor" name="SellMaxFactor" value="{{ strategy.SellMaxFactor }}"> %
+            </td>
+        </tr>
+        
+    </tbody>
+</table>

@@ -1,0 +1,115 @@
+<html>
+    <head>
+        <title>Trading bot backtester</title>
+        {% include 'segments/_header.html' %}
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-chart-financial"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns"></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-zoom"></script>
+        
+        
+        <meta id="StrategySettingsData" data-json='{{ AllStrategySettings | tojson }}'>
+        <meta id="strategy" data-json='{{ strategy | tojson }}'>
+        <meta id="trades_json" data-json='{{ trades_json | tojson }}'>
+        <meta id="candles_json" data-json='{{ candles_json | tojson }}'>
+        <meta id="avgs" data-json='{{ avgs | tojson }}'>
+        <meta id="price_indic" data-json='{{ price_indic | tojson }}'>
+        <meta id="solo_indic" data-json='{{ solo_indic | tojson }}'>
+    </head>
+    <body>
+        <div class="sidenav"> 
+            <div class="nav_top">
+                <form action="/backtester_load" method="POST" >
+                <select name="load_select" id="load_select">
+                    {%for strategy in strategy_list %} 
+                        
+                        <option id="nav_{{strategy.idx}}" value="{{strategy.idx}}" >{{strategy.idx}} {{strategy.name}}</option>              
+                        
+                    {% endfor %}
+                </select>                
+                    <button type="submit">LOAD</button>
+                </form>
+                <button class=""  id="nav_RUN" value="RUN" type="button">RUN</button>     
+                <button class=""  id="nav_Settings" value="Settings" type="button">Settings</button>
+                <button class=""  id="nav_Status" value="Status" type="button">Status</button>    
+                <button class=""  id="nav_Charts" value="Charts" type="button">Charts</button>     
+                <button class=""  id="nav_Trades" value="Trades" type="button">Trades</button>
+            
+            </div>
+            {% include 'segments/_nav_side.html' %}
+        </div>
+    <div class="wrapper">
+        <header>
+            <div>
+             <b>BACKTESTER</b> <br>
+             {{ msg }}
+             </div>
+        </header>
+        <main>              
+            <div class="center-column-div">
+                
+                <!---------------------------TITLE    ------------------------>
+
+                <h2 class>  Strategy {{strategy.id}}: {{ strategy.name }} </h2>
+
+                <!---------------------------Run backtester    ------------------------>
+                <section id="RUN"></section>
+                <h2>RUN</h2> 
+                <form action="/backtester" method="POST" onsubmit="return confirm('RUN backtester? \n This might take several minutes!');">
+                    <label for="balance_s1"  id="label_balance_s1" >Amount of available asset S1</label>
+                    <input type="number" name="balance_s1" id="balance_s1" min="0" step="0.0001" value="{{balance_s1}}"> 
+                    <label for="balance_s2"  id="label_balance_s2" >Amount of available asset S2</label>
+                    <input type="number" name="balance_s2" id="balance_s2" min="0" step="0.0001" value="{{balance_s2}}">
+                    <button type="submit">RUN</button>
+                </form> 
+                <!---------------------------Settings tables    ------------------------> 
+                <section id="Settings"></section>               
+                <h2>Settings</h2>                    
+                        
+                    <form action="/strategy_save" method="POST" onsubmit="return confirm('Confirm action');">
+                        <div class="center-div" id="div_{{strategy.id}}">   
+                            <input type="hidden" name="location" value="backtester">
+                    
+                            <input class="titleLong" type="text" name="name" value= "{{ strategy.name  }}"> 
+                        
+                            {% include 'segments/_settings_gen_table.html' %}
+                            
+                            {% include 'segments/_settings_ind_table.html' %}
+                        </div>
+                    </form>      
+                
+
+                <!---------------------------Status tables    ------------------------>             
+                <section id="Status"></section>   
+                <h2>Status</h2>
+                {% if not activeStrategyData %}
+                    <p>No status data</p>
+                {% else %}                    
+                    {% include 'segments/_status_tables.html' %}
+                {% endif %}
+
+                <!---------------------------CHARTS    ------------------------>
+                <section id="Charts"></section>
+                <div id= "charts_div" class="chart-wrapper">
+                </div>              
+                
+                <!---------------------------Trade tables    ------------------------>
+                <section id="Trades"></section>
+                <h2>Trade table</h2>
+                {% include 'segments/_trade_table.html' %} 
+
+            </div>
+        </main>
+        <footer>
+            {% include 'segments/_footer.html' %}    
+        </footer>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/scroll.js') }}"></script>
+
+    <script type="module" src="{{ url_for('static', filename='js/chart_generate.js') }}"></script>
+
+    <script  src="{{ url_for('static', filename='js/settings_table.js') }}"></script>    
+    <script type="module" src="{{ url_for('static', filename='js/strategy_settings_one.js') }}"></script>
+    </body>
+</html>

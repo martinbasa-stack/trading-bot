@@ -1,0 +1,46 @@
+<table class="wrap"><!-- DESCRIPTION PARAGRAPH ______________________________________ -->                    
+    <tr>
+        <td>
+            <p class="description">  
+                GENERAL <br>
+                RUN..................................start or stop strategy <br>
+                Paper trading........................trades will be only in file and not send to API (for testing)<br>
+                Lookback Interval....................Number of candles and candle timeframe for searching Min/Max price<br>
+                Only trade on candle close...........If selected no intra candle trades will be executed <br>
+                Minimum time for new trade...........time in s before new order can be placed OR time span for detecting candle was closed<br>
+                Decimal places for rounding orders...rounding of Symbol 2 when placing an order <br><br>
+                Asset managment <br>
+                Target........................."None" no limits <br>
+                ..............................."Account balance" limits for saving apply on account <br> 
+                ..............................."Trades" limits for saving apply on trades only <br>
+                Save...........................Select asset to be saved <br>
+                Maximum spending asset.........Limit for how much of none seving asset can be spend on trades <br>
+                Minimum saved asset............Limit the minimum ammount of saved asset to be left on account or in trades. <br>
+                ...............................If % than minimum limit will increase with buys of saved asset. <br><br>
+                Buy/Sell strategy <br>
+                Symbol.........................SimbolX of a pair<br>
+                Base buy/sell amount...........Basic amount of SimbolX used per order <br>
+                Minimum buy/sell ammount.......Minimum amount of SimbolX used if not enough available balance <br>
+                Dip buy/sell trigger...........Price drop from Max in % to trigger the buy order <br>
+                Max factor for dynamic orders..Maximum % the base amount can be increased<br><br>
+            </p>
+        </td>
+    </tr>
+    <tr>
+        <td>
+            <p class="description">  
+            INDICATORS <br>
+            At the top of the indicator you can input minimum weight the triggers need to produce for the Buy/Sell to be enabled <br>
+            Type......................SMA (Simple Moving Average); EMA (Exponential MA); RSI (Relative Strength Index);<br>
+            ..........................ROC (Rate Of Change); ADX (Average Directional Movement Index); BB (Bollinger bands) <br>
+            ..........................Average Cost/Entry/Exit; Price; Fear & Gread from Alternative.me <br>
+            Indicator Input...........Input value for Indicator and the interval if aplicable<br>
+            Weight....................ammount of weight the Indicator will produce when > or < conditions are met<br>        
+            Offset....................Move the trigger value up or down in % for blocking trade (producing weight)<br>   
+            Trigger logic..> <........Trigger value and conditions for weight and factor to be applied<br>
+            Factor....................ON/OFF and value in % of delta (trigger - value) for base Buy/Sell amount to increase<br>
+            Max factor................Maximum % for increasing base value this indicator can output<br>
+            </p>
+        </td>
+    </tr>
+</table>
