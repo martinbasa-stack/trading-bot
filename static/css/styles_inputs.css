@@ -1,0 +1,105 @@
+/*inputs*/
+input {
+    field-sizing: content;
+    max-width: 120px;
+    min-width: 50px;
+    padding: 3px;
+    text-align: right;
+    background-color: rgb(146, 146, 146);
+    border-radius: 5px;
+}
+select {
+    max-width: 160px;
+    min-width: 40px;
+    padding: 3px;
+    border: 2px inset rgb(39, 39, 39);
+    text-align: center;
+    background-color: rgb(146, 146, 146);
+    border-radius: 5px;
+}
+input.long{
+    max-width: 500px;
+    width: 200px;
+    text-align: left;
+    background-color: rgb(146, 146, 146);
+}
+input.titleLong{
+    max-width: 90vw;
+    width: 80vw;
+    text-align: center;
+    background-color: rgb(146, 146, 146);
+    height: 40px;
+    font-size: large;
+    font-weight: bold;
+}
+input.titleLongGreen{
+    max-width: 90vw;
+    width: 80vw;
+    text-align: center;
+    color: lightgray;
+    background-color: green;
+    height: 40px;
+    font-size: large;
+    font-weight: bold;
+}
+input.disabledLook{
+    color: dimgray;
+    background-color: rgb(51, 51, 51);
+}
+
+/* Container */
+.custom-checkbox-container {
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    gap: 8px;
+    font-size: medium;
+    user-select: none;
+    position: relative;
+    padding-left: 10px;
+}
+
+/* Hide the native checkbox but keep it accessible */
+.custom-checkbox-container input {
+    position: absolute;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Custom box */
+.checkmark {
+    width: 18px;
+    height: 18px;
+    border-radius: 4px;
+    border: 2px solid #888;
+    transition: all 0.2s ease;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+/* Checkmark icon (hidden initially) */
+.checkmark::after {
+    content: "";
+    width: 4px;
+    height: 8px;
+    display: block;
+    border-bottom: 3px solid white;
+    border-right: 3px solid white;
+    transform: rotate(45deg) scale(0);
+    transition: 0.2s;
+}
+
+/* Hover */
+.custom-checkbox-container:hover .checkmark {
+    border-color: #555;
+}
+
+/* Checked */
+.custom-checkbox-container input:checked + .checkmark {
+    background-color: rgb(0, 110, 0);
+    border-color: rgb(0, 70, 0);
+}
+
+.custom-checkbox-container input:checked + .checkmark::after {
+    transform: rotate(45deg) scale(1);
+}
