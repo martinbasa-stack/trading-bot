@@ -1,0 +1,79 @@
+<html>
+    <head> 
+        <meta id="StrategySettingsData" data-json='{{ AllStrategySettings | tojson }}'>
+        <meta id="scrollId" data-json='{{ scrollId | tojson }}'>
+        <title>Bot settings</title>        
+        {% include 'segments/_header.html' %}
+    </head>
+    <body>
+        <div class="sidenav"> 
+            <div class="nav_top">            
+                {%for strategy in strategy_list %} 
+                    
+                    <button class="" id="nav_{{strategy.idx}}" value="{{strategy.idx}}" type="button">{{strategy.idx}} {{strategy.name}}</button>              
+                                
+                {% endfor %}
+            </div>
+            {% include 'segments/_nav_side.html' %}
+        </div>
+    <div class="wrapper">
+        <header>
+            <div>
+                <b>STRATEGY SETTINGS</b>
+            </div>
+            <div>
+                Message: {{usrMsg}} 
+            </div>
+        </header>
+        <main>
+            <div id="stratStatus">
+                {% for strategy in AllStrategySettings %} 
+
+                {%if strategy.id != "backtester" %}    
+
+                    <section id="{{strategy.id}}">
+                    <hr class="custom-hr">
+                    
+                    <form action="/settings_chart" method="POST">
+                        <button type="submit" name="load_select" value="{{strategy.id}}" class="rounded">CHART</button>
+                    </form>     
+                    <form action="/strategy_save" method="POST" onsubmit="return confirm('Confirm action');">
+                        <input type="hidden" name="location" value="all">
+                        <h2>{{strategy.type}}</h2>
+                        <h2> 
+                            {% if strategy.paperTrading %}                        
+                                <input class="titleLong" 
+                            {%else%}
+                                <input class="titleLongGreen" 
+                            {%endif%}
+                            type="text" name="name" value= "{{ strategy.name  }}"> 
+                        </h2>
+                        <div class="center-div" id="div_{{strategy.id}}">   
+                            
+                            {% include 'segments/_settings_gen_table.html' %}
+                            
+                            {% include 'segments/_settings_ind_table.html' %}
+  
+                        </div>
+                    </form>
+                    </section>
+                
+                {%endif%}
+                
+                {% endfor %}
+                
+                {% include 'segments/_paragraph_desc.html' %}  
+                
+            </div>
+        </main>
+        <footer>            
+            {% include 'segments/_footer.html' %}    
+        </footer>
+    </div> 
+
+    <script src="{{ url_for('static', filename='js/scroll.js') }}"></script>
+    
+    <script src="{{ url_for('static', filename='js/settings_table.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/strategy_settings.js') }}"></script>
+    </body>
+</html>

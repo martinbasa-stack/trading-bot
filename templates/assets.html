@@ -1,0 +1,102 @@
+<html>
+    <head>
+        <title>Trading bot</title>
+        {% include 'segments/_header.html' %}
+    </head>
+    <body>
+        <div class="sidenav"> 
+            <div class="nav_top">
+                
+            </div>
+            {% include 'segments/_nav_side.html' %}
+        </div>
+    <div class="wrapper">
+        <header>
+            <div>
+             <b>ASSET BALANCE</b> <br>
+             {{usr_msg}}
+             </div>
+        </header>
+        <main>   
+            
+            <div class="center-column-div">
+                <table class="wrap" border = "1">   <!-- ------------------ BINANCE ---------------BALANCE TABLE  -->
+                    <thead>
+                        <tr>
+                            <th colspan="3">Binance Balance</th>
+                        </tr>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Available</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>  
+                        <tbody>
+                        {%for Balance in binance_balance %}
+                        <tr >
+                            <td padding = "10px">
+                                <b> {{ Balance }} </b>
+                            </td>
+                            <td>
+                                {{ binance_balance[Balance]["Available"]}}  
+                            </td>
+                            <td>
+                                {{ binance_balance[Balance]["Total"] }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                <form action="/wallet_unlock" method="post" onsubmit="return confirm('Do you want to unlock wallets?');">        
+
+                    <table  border = "1">   
+                        <td  >Unlock wallet</td>   
+                        <td >
+                            <input class="long" type="password" name="password" value = "" >
+                        </td >    
+                        <td >                                 
+                            <button type="submit" class="rounded" name="ActionButton" value="UNLOCK" >UNLOCK</button>                         
+                        </td>
+                    </table>               
+
+                </form>   
+                <table class="wrap" border = "1">   <!-- -----------------------  SOLANA  ----BALANCE TABLE  -->
+                    <thead>
+                        <tr>
+                            <th colspan="3">Solana Balance</th>
+                        </tr>
+                        <tr>
+                            <th colspan="3">{{ solana_wallet }}</th>
+                        </tr>
+                        <tr>
+                            <th>Asset</th>
+                            <th>Available</th>
+                            <th>Total</th>
+                        </tr>
+                    </thead>  
+                        <tbody>
+                        {%for Balance in solana_balance %}
+                        <tr >
+                            <td padding = "10px">
+                                <b> {{ Balance }} </b>
+                            </td>
+                            <td>
+                                {{ solana_balance[Balance]["Available"]}}  
+                            </td>
+                            <td>
+                                {{ solana_balance[Balance]["Total"] }}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>  
+        </main>
+        <footer>
+            {% include 'segments/_footer.html' %}    
+        </footer>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/scroll.js') }}"></script>
+    </body>
+</html>

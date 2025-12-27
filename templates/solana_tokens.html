@@ -1,0 +1,86 @@
+<html>
+    <head>       
+        <title>Basic settings</title>
+        {% include 'segments/_header.html' %}
+    </head>
+    <body>  
+        <div class="sidenav"> 
+            <div class="nav_top">
+                <div class="nav_box">
+                    <a class="button_side" href="{{ url_for('flaskRoute.display_logs') }}"> LOGS </a>
+                </div>
+                <div class="nav_box">
+                    <a class="button_side" href="{{ url_for('flaskRoute.wallet_setup') }}"> WALLET </a>
+                </div>
+
+            </div>
+            {% include 'segments/_nav_side.html' %}
+        </div>
+    <div class="wrapper">  
+        <header>
+            <div>
+             <b>SOLANA TOKEN LIST</b>
+             <br>
+             {{usrMsg}}
+             </div>
+        </header>
+        <main>         
+        <div class="center-div">         
+            <table border = "1">   
+                <thead>
+                    <tr>
+                        <th colspan="6">Solana tokens</th> 
+                    </tr>
+                    <tr>
+                        <th>Symbol</th>
+                        <th>Name</th>
+                        <th>Mint</th>
+                        <th>Decimal</th>
+                        <th>Supply</th>
+                        <th></th>
+                    </tr>
+                                            
+                </thead>
+                <tbody> 
+                    {% for t in solana_tokens_list %}
+                    <form action="/solana_tokens" method="post" onsubmit="return confirm('Do you want to remove token {{t.symbol}}?');">     
+                        <tr>
+                            <td>
+                               {{t.symbol}}
+                                <input type="hidden" value="{{t.symbol}}" name="symbol">
+                            </td>
+                            <td>{{t.name}}</td>
+                            <td>{{t.mint}}</td>
+                            <td>{{t.decimals}}</td>
+                            <td>{{t.supply}}</td>
+                            <td>
+                                <button type="submit" name="ActionButton" value="DELETE" >DELETE</button>  
+                            </td>
+                        </tr>
+                    </form>
+                    {% endfor %}                         
+                    
+                    <form action="/solana_tokens" method="post" onsubmit="return confirm('Do you want to add token?');">                        
+                        <tr>
+                            <td>
+                                Mint
+                            </td>
+                            <td colspan="4">
+                                <input class="limitles" type="text" value="" name="mint">
+                            </td>
+                            <td>                                 
+                                <button type="submit" name="ActionButton" value="ADD" >ADD</button>                         
+                            </td>
+                        </tr>
+                    </form> 
+                </tbody>
+            </table>               
+            
+        </div> 
+        </main>
+        <footer>
+            {% include 'segments/_footer.html' %}     
+        </footer>
+    </div> 
+    </body>
+</html>

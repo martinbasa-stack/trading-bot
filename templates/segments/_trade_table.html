@@ -1,0 +1,58 @@
+<table border = "1">  <!-- TRADE Tables-->
+    {% if strategyID in TradeTables %}
+    <thead>
+        <tr>
+            <th>Time</th>
+            <th>ID</th>
+            <th>Side</th>
+            <th>Amount S1</th>
+            <th>Symbol1</th>
+            <th>Amount S2</th>
+            <th>Symbol2</th>
+            <th>Price</th>
+            <th>Commision</th>
+            <th>Comm Coin</th>
+        </tr>
+        <tr >
+            <th>Sum</th>
+            <td></td>
+            <td></td>
+            <td>{{ TradeTables[strategyID]["trades"] | map(attribute=3) | map('float') | sum }}</td>
+            <td>{{ TradeTables[strategyID]["trades"][0][2] }}</td>
+            <td>{{ TradeTables[strategyID]["trades"] | map(attribute=5) | map('float') | sum }}</td>
+            <td>{{ TradeTables[strategyID]["trades"][0][4] }}</td>
+            <td></td>
+            <td>{{ TradeTables[strategyID]["trades"] | map(attribute=8) | map('float') | sum }}</td>
+            <td></td>
+        </tr>
+    </thead>                  
+    <tbody>
+            <tr></tr>
+        {%for trades in TradeTables[strategyID]["trades"] %}
+        <tr >
+            <td>{{ trades[0] }}</td>
+            {% if trades[1] == "Open" %}                        
+            <td class="yellow">
+            {%else%}
+            <td>
+            {%endif%}
+            {{ trades[1] }}</td>
+            {% if trades[3] > 0 %}
+                <td class="green">BUY</td>
+            {%else%}
+                <td class="red">SELL</td>
+            {%endif%}
+            <td>{{ trades[3] }}</td>
+            <td>{{ trades[2] }}</td>
+            <td>{{ trades[5] }}</td>
+            <td>{{ trades[4] }}</td>
+            <td>{{ trades[6] }}</td>
+            <td>{{ trades[8] }}</td>
+            <td>{{ trades[9] }}</td>
+        </tr>
+        {% endfor %}
+    </tbody>
+    {%else%}
+    No Table
+    {%endif%}
+</table>     

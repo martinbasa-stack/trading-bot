@@ -1,0 +1,359 @@
+<html>
+    <head>       
+        <title>Basic settings</title>
+        {% include 'segments/_header.html' %}
+    </head>
+    <body>  
+        <div class="sidenav"> 
+            <div class="nav_top">
+                <div class="nav_box">
+                    <a class="button_side" href="{{ url_for('flaskRoute.display_logs') }}"> LOGS </a>
+                </div>
+                
+                <div class="nav_box">
+                    <a class="button_side" href="{{ url_for('flaskRoute.wallet_setup') }}"> WALLET </a>
+                </div>
+                <div class="nav_box">
+                    <a class="button_side" href="{{ url_for('flaskRoute.solana_tokens') }}">SOL TOKENS</a>
+                </div>
+
+                <form action="/BasicSettings" method="post" onsubmit="return confirm('Ping the server?');"> 
+                <button class="" type="submit" name="ActionButton" value="ping" >PING</button>
+                </form>
+                <br>
+                <form action="/BasicSettings" method="post" onsubmit="return confirm('Do you want to update list of trading pares from exchange! \n CAN TERMINATE CONNECTION!');"> 
+                <button class="red" type="submit" name="ActionButton" value="force_update" >FORCE<br>UPDATE </button>
+                </form>
+            </div>
+            {% include 'segments/_nav_side.html' %}
+        </div>
+    <div class="wrapper">  
+        <header>
+            <div>
+             <b>BASIC BOT SETTINGS</b>
+             <br>
+             {{usrMsg}}
+             </div>
+        </header>
+        <main>         
+        <div class="center-div">
+            <form action="/BasicSettings" method="post" onsubmit="return confirm('Do you want to save settings?');"> 
+                <div class="center-div">
+                    <table border = "1">   <!-----   Market history data      --->
+                        <thead>     
+                            <tr>
+                                <th colspan="2">
+                                    Market history data  
+                                </th>
+                            </tr>    
+                            <th>Setting</th>
+                            <th>Value</th>
+                        </thead>
+                        <tbody>               
+                            <tr>
+                                <td>Refresh time</td>   
+                                <td>
+                                    <input type="number" step="1" min="1" name="histDataUpdate" value="{{ my_basicSettings.histDataUpdate }}"> min     
+                                </td>                     
+                            </tr>  
+                            <tr>
+                                <td>Num. of candles</td>
+                                <td>
+                                    <input type="number" step="1" min="200" max="4000" name="numOfHisCandles" value="{{ my_basicSettings.numOfHisCandles }}"> 
+                                </td>                           
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table border = "1">   <!-----   Strategy      --->
+                        <thead>     
+                            <tr>
+                                <th colspan="2">
+                                    Strategy 
+                                </th>
+                            </tr>    
+                            <th>Setting</th>
+                            <th>Value</th>
+                        </thead>
+                        <tbody>     
+                            <tr>
+                                <td>Refresh time</td>
+                                <td>
+                                    <input type="number" step="1" min="4" name="strategyUpdate" value="{{ my_basicSettings.strategyUpdate }}"> s
+                                </td>    
+                            </tr>
+                            <tr>
+                                <td>Open trade aging</td>
+                                <td>
+                                    <input type="number" step="1" min="30" name="liveTradeAging" value="{{ my_basicSettings.liveTradeAging }}"> s
+                                </td>    
+                            </tr>
+                            
+                            <tr>
+                                <td>Status update</td>
+                                <td>
+                                    <input type="number" step="1" min="4" name="statusUpdate" value="{{ my_basicSettings.statusUpdate }}"> h
+                                </td>    
+                            </tr>
+                        </tbody>
+                    </table>
+                    
+                    <table border = "1">   <!-----   SOLANA      --->
+                        <thead>     
+                            <tr>
+                                <th colspan="2">
+                                    Solana 
+                                </th>
+                            </tr>    
+                            <th>Setting</th>
+                            <th>Value</th>
+                        </thead>
+                        <tbody>     
+                            <tr>
+                                <td>Slippage limit</td>
+                                <td>
+                                    <input type="number" step="0.01" min="0.01" name="sol_slippage_bps" value="{{ my_basicSettings.sol_slippage_bps / 100 }}"> %
+                                </td>    
+                            </tr>
+                            <tr>
+                                <td>Price impact limit</td>
+                                <td>
+                                    <input type="number" step="0.01" min="0.01" name="sol_price_impact_lim" value="{{ my_basicSettings.sol_price_impact_lim }}"> %
+                                </td>    
+                            </tr>
+                            
+                            <tr>
+                                <td>Timeout</td>
+                                <td>
+                                    <input type="number" step="1" min="4" name="sol_timeout" value="{{ my_basicSettings.sol_timeout }}"> h
+                                </td>    
+                            </tr>
+                        </tbody>
+                    </table>
+                    <table border = "1">   <!-----   Communication      --->
+                        <thead>     
+                            <tr>
+                                <th colspan="2">
+                                    Communication 
+                                </th>
+                            </tr>    
+                            <th>Setting</th>
+                            <th>Value</th>
+                        </thead>
+                        <tbody>     
+                            <tr>
+                                <td>Stream watchdog</td>
+                                <td>
+                                    <input type="number" step="0.1" min="0.1" name="klineStreamLoopRuntime" value="{{ my_basicSettings.klineStreamLoopRuntime }}"> s
+                                </td>    
+                            </tr>
+                            <tr>
+                                <td>WebSocket watchdog</td>
+                                <td>
+                                    <input type="number" step="0.1" min="0.1" name="websocetManageLoopRuntime" value="{{ my_basicSettings.websocetManageLoopRuntime }}"> s
+                                </td>    
+                            </tr>
+                            <tr>
+                                <td>Server ping interval</td>
+                                <td>
+                                    <input type="number" step="1" min="1" name="pingUpdate" value="{{ my_basicSettings.pingUpdate }}"> min
+                                </td>    
+                            </tr> <tr>
+                                
+                            <tr>
+                                <th colspan="2">
+                                    <label class="custom-checkbox-container">
+                                    Telegram
+                                    <input type="checkbox"  id="useTelegram" name="useTelegram" {% if my_basicSettings.useTelegram %}checked{% endif %}>  
+                                    <span class="checkmark"></span>
+                                    </label>
+                                </th>
+                            </tr>  
+                        </tbody>
+                    </table>
+                    <table border = "1">   <!-----   Flask User Interface       --->
+                        <thead>                             
+                            <tr>
+                                <th colspan="2">Settings below require application restart after saving</th>
+                            </tr>  
+                            <tr>
+                                <th colspan="2">
+                                    Flask User Interface 
+                                </th>
+                            </tr>    
+                            <th>Setting</th>
+                            <th>Value</th>
+                        </thead>
+                        <tbody>      
+                            <tr>
+                                <td>Host IP</td>
+                                <td>
+                                    <input class="long" type="text" name="host" value = "{{ my_basicSettings.host }}" >
+                                </td>                           
+                            </tr>   
+                            <tr>
+                                <td>Port</td>
+                                <td>
+                                    <input class="long" type="number" step="1" min="1" name="Port" value = "{{ my_basicSettings.Port }}" >
+                                </td>                           
+                            </tr>
+                            
+                            <tr>
+                                <th colspan="2">Binance API</th>
+                            </tr> 
+                            <tr>
+                                <td>Connection timeout</td>
+                                <td>
+                                    <input type="number" step="100" min="1000" name="timeout" value="{{ my_basicSettings.timeout }}"> ms
+                                </td>    
+                            </tr> 
+                            <tr>
+                                <td>Reconnection delay</td>
+                                <td>
+                                    <input type="number" step="1"  min="1" name="reconnect_delay" value="{{ my_basicSettings.reconnect_delay }}"> s
+                                </td>   
+                            </tr> 
+
+                            <tr>
+                                <td>                                       
+                                </td>
+                                <td >                                 
+                                    <button type="submit" name="ActionButton" value="SAVE" >SAVE DATA</button>                         
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>                  
+            </form>
+            
+            <form action="/BasicSettings" method="post" onsubmit="return confirm('Do you want to save your credentials?');">        
+                <table border = "1">   
+                    <thead>
+                        <th>Setting</th>
+                        <th>Value</th>
+                        <tr>
+                            <th colspan="2">
+                                <select name="credential_sel" id="credential_sel" >
+                                    <option value="flask">Flask credentials</option>
+                                    <option value="binance">Binance API</option>
+                                    <option value="telegram">Telegram API</option>
+                                </select>
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody> 
+                        </tr> 
+                            <td> 
+                                Password
+                            </td>
+                            <td>
+                                <input class="long" type="password" name="password" value = "password" >
+                            </td>                           
+                        </tr>
+                        <tr>
+                            <td id="txt_value1">User </td>
+                            <td>
+                                <input class="long" type="text" name="value1" value = "" >
+                            </td>                           
+                        </tr>
+                        <tr>
+                            <td id="txt_value2">Password</td>
+                            <td>
+                                <input class="long" type="text" name="value2" value = "" >
+                            </td>                           
+                        </tr>  
+                        
+                        <tr>
+                            <td>                                       
+                            </td>
+                            <td >                                 
+                                <button type="submit" name="ActionButton" value="SAVE CRED" >SAVE DATA</button>                         
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>          
+            </form>
+
+            <form action="/wallet_unlock" method="post" onsubmit="return confirm('Do you want to unlock wallets?');">    
+                <table border = "1">   
+                    <thead>
+                        <tr>
+                            <th >Wnlock wallet</th>    
+                            <th>                                
+                                <button type="submit" name="ActionButton" value="UNLOCK" >UNLOCK</button> 
+                            </th>   
+                        </tr>                 
+                    </thead>
+                    <tbody> 
+                        </tr> 
+                            <td> 
+                                Password
+                            </td>
+                            <td>
+                                <input class="long" type="password" name="password" value = "" >
+                            </td>                           
+                        </tr>      
+                    </tbody>
+                </table>                 
+            </form> 
+                          
+            <table>
+                <thead>
+                    <th>Pair</th>
+                    <th>Min qty</th>
+                    <th>Max qty</th>
+                    <th>Order dec. places</th>
+                </thead>
+                <tbody>
+                {%for Pair in exchange_info_data %} 
+                    <tr>
+                        <td>{{Pair}}</td>
+                        <td>{{ exchange_info_data[Pair]["min_qty"] }}</td>
+                        <td>{{ exchange_info_data[Pair]["max_qty"] }}</td>
+                        <td>{{ exchange_info_data[Pair]["order_precision"] }}</td>
+                    </tr>
+                
+                {% endfor %}
+                </tbody>
+            </table>
+        </div> 
+        </main>
+        <footer>
+            {% include 'segments/_footer.html' %}     
+        </footer>
+    </div> 
+
+    <script>
+        document.body.addEventListener('change', function(event) {
+            const selectedElement = event.target; //Get actual element
+            // Check if the event target is a <select> element
+            if (selectedElement.tagName === 'SELECT') {
+                const selectedValue = selectedElement.value;
+                
+                //Hide for asset manager depending on target
+                if (selectedElement.id === 'credential_sel'){
+                    const val1 = document.body.querySelector('#txt_value1')
+                    const val2 = document.body.querySelector('#txt_value2')
+                    switch (selectedValue) {
+                        case "flask":
+                            val1.innerText = "User";
+                            val2.innerText = "Password";
+                            break;
+
+                        case "binance":
+                            val1.innerText = "API KEY";
+                            val2.innerText = "API SECRET";
+                            break;
+
+                        case "telegram":
+                            val1.innerText = "Chat ID";
+                            val2.innerText = "TOKEN";
+                            break;
+
+                    }
+
+                }
+            }                
+        });
+    </script>
+    </body>
+</html>
