@@ -1,0 +1,125 @@
+a.navbutton {
+    padding: 5px 10px;
+    min-width: 100px;
+    align-self: start; /* or center, end */
+    justify-self: center; /* or center, end */
+    text-wrap: wrap;
+    border: 2px outset buttonborder;
+    color: black;
+    background-color: darkcyan;
+    text-decoration: none;
+    font-size: small;
+    cursor:pointer;
+    border-radius: 50px 15px 5px 40px;
+    transition: background-color 0.4s ease-in-out, transform 0.4s ease-in-out;
+}    
+a.navbutton:hover {
+    color: rgb(139, 0, 0);
+    background-color: rgb(41, 41, 41);
+    text-decoration: none;
+} 
+
+/*buttons*/
+button {
+    min-width: 100px;
+    padding: 8px 10px;
+    margin-left: 2px;
+    margin-top: 2px;
+    box-shadow:rgb(0, 49, 49) ;
+    border: 2px outset buttonborder;
+    border-radius: 15px 50px 40px 5px;
+    background-color: darkcyan;
+    color : black;
+    text-align: center;
+    cursor:pointer;
+    transition: background-color 0.4s ease-in-out, transform 0.4s ease-in-out;
+    }        
+button.invert {
+    border: 2px outset buttonborder;
+    border-radius: 50px 15px 5px 40px;
+    }     
+button.rounded {
+    border: 2px outset buttonborder;
+    border-radius: 30px 30px 30px 30px;
+    }
+button:hover {
+    background-color: rgb(41, 41, 41);
+    color : darkcyan;
+    transform: translateY(-2px); /* Slightly lift the button on hover */
+    box-shadow: 0 0 10px rgba(255, 255, 255, 0.7); /* White glow on hover */
+    }
+button.red {
+    background-color: darkred;
+    color: lightgray;
+    font-weight: bold;
+    }
+button.red:hover {
+    background-color: rgb(41, 41, 41);
+    color : darkred;
+    transform: translateY(-2px); /* Slightly lift the button on hover */
+    }
+button.green {
+    background-color: green;
+    color: lightgray;
+    font-weight: bold;
+    }
+button.green:hover {
+    background-color: rgb(41, 41, 41);
+    color : green;
+    transform: translateY(-2px); /* Slightly lift the button on hover */
+    }
+a.button {
+    padding: 10px 20px;
+    margin-left: 5px;
+    margin-top: 2px;
+    border: 2px outset buttonborder;
+    border-radius: 30px 30px 30px 30px;
+    font-weight: bold;
+    color: black;
+    background-color: darkcyan;
+    text-decoration: none;
+    cursor:pointer;
+    transition: background-color 0.4s ease-in-out, transform 0.4s ease-in-out;
+} 
+
+a.button_side {
+    font-weight: bold;
+    text-decoration: none;   
+    font-size: small;     
+    min-width: 100px;
+    padding: 8px 10px;
+    margin-left: 2px;
+    margin-top: 2px;
+    box-shadow:rgb(0, 49, 49) ;
+    border: 2px outset buttonborder;
+    border-radius: 15px 50px 40px 5px;
+    background-color: darkcyan;
+    color : black;
+    text-align: center;
+    cursor:pointer;
+    transition: background-color 0.4s ease-in-out, transform 0.4s ease-in-out;
+} 
+a.button_side:hover {
+    color: darkcyan;
+    background-color: rgb(41, 41, 41);
+    text-decoration: none;
+} 
+.nav_box {
+    display: flex;
+    flex-grow: 0;
+    flex-basis: 1;
+    flex-flow: wrap;
+    flex-shrink: 1;
+    gap: 2px;
+    color: #ccc;
+}
+a.Logout {        
+    background-color: darkred;
+    color: lightgray;
+}
+
+a.button:hover {
+    color: darkcyan;
+    background-color: rgb(41, 41, 41);
+    text-decoration: none;
+} 
