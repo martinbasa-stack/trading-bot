@@ -3,12 +3,12 @@
 
 # 🚀 Advanced DCA Algorithmic Trading Bot
 
-### **Version 1.4**
+### **Version 2.0**
 
 Automated algorithmic trading bot using an **Advanced DCA (Dollar-Cost Averaging) strategy**.
+The bot can trade on **Binance CEX** or on **Solana** blockchain using **Raydium DEX** swaps.
 The bot buys dips and sells pumps with optional **dynamic order adjustment**, indicator-based triggers, backtesting with intracandle price simulation, basic charting, integrated Telegram alerts, multi-threaded runtime, and a Flask UI dashboard.
 
-This is my **first major Python project**, and while fully functional, it may contains some unpolished areas.
 
 ---
 
@@ -23,7 +23,7 @@ This is my **first major Python project**, and while fully functional, it may co
 * [📝 Requirements](#-requirements)
 * [⚙️ Configuration](#️-configuration)
 * [🤝 Donations](#-donations)
-* [📌 Version 1.4 Notice & Roadmap](#-version-14-notice--roadmap)
+* [📌 Version 2.0 Notice & Roadmap](#-version-20-notice--roadmap)
 
 ---
 # ✨ Features
@@ -48,22 +48,39 @@ This is my **first major Python project**, and while fully functional, it may co
 ### ✔ Full Multi-Threaded Runtime
 
 * **Flask thread** (web UI)
-* **Kline stream thread** (price updates)
-* **WebSocket management thread** (account updates, order fills)
-* **Main trading loop** (strategy execution)
+* **Binance stream thread** (Binance price updates)
+* **WebSocket management thread** (Binance account updates, order fills)
+* **Pyth stream thread** (onchain price updates)
+* **Utiliti loop** (historical data managment and telegram bot)
+* **Main trading loop** (Runs main bot strategies)
+
+
+### ✔ Trade Integration
+
+* Local trade table with CSV persistence
+* Paper-trading mode included
 
 ### ✔ Binance Integration
 
-* Live kline streams
+* Live streams
 * Live account & order updates
-* Local trade table with CSV persistence
-* Paper-trading mode included
+
+### ✔ On-chain Integration
+
+* Supported chain **Solana**
+* Securely encrypted mnemonic phrase 
+    * Mnemonic phrase exists only in **RAM** after it is unlocked
+    * Password protected -> Password is **irretrievable** does not exist in the program
+    * Geanarate new wallet
+    
+* Live streams
+* Live account & order updates
 
 ### ✔ Telegram Integration
 
 * Trade notifications
 * Error alerts
-* Status messages
+* Requested status messages
 
 ### ✔ Automatic Historical Data Loading
 
@@ -75,20 +92,28 @@ This is my **first major Python project**, and while fully functional, it may co
 # ⚙️ Program Architecture
 
 ```
-┌──────────────────┐
-│   Main Thread     │  → Runs all strategies continuously
-└──────────────────┘
+┌────────────────────────┐
+│     Utiliti Thread      │  → Runs historical data updates and telegram bot
+└────────────────────────┘
+
+┌─────────────────────┐
+│  Main trading loop   │  → Runs main bot strategies
+└─────────────────────┘
 
 ┌──────────────────┐
 │  Flask Thread     │  → Web UI / settings / logs
 └──────────────────┘
 
+┌──────────────────────┐
+│  Pyth Stream Therea   │  → Price feed for onchain trading
+└──────────────────────┘
+
 ┌───────────────────────────────────────┐
-│  Binance WebSocket Management Thread  │ → Balances, trades, account events
+│  Binance WebSocket Management Thread   │ → Balances, trades, account events
 └───────────────────────────────────────┘
 
 ┌──────────────────────────────┐
-│   Kline Stream Thread        │ → Price feeds, OHLC updates
+│   Binance Stream Thread       │ → Price feeds, OHLC updates
 └──────────────────────────────┘
 ```
 ---
@@ -101,16 +126,24 @@ This is my **first major Python project**, and while fully functional, it may co
 ├── /config
 │   ├── settings.json          # General application settings
 │   ├── strategies.json        # All stored strategies
+│   ├── credentials.json       # Encrypted credentials such as API,... Password and User are hashed
 │   └── strategies.bak         # Backup of strategies
 │
-├── /data                      # Program-generated and managed data
+├── /data                      # Program-generated and managed data wallet encryption
 ├── /logs                      # Log files
 │
 ├── /src
+│   │
+│   ├── /assets            # Asset management
+│   │   ├── analyzer.py    # Asset analysis logic
+│   │   ├── manager.py     # Asset balance manager
+│   │   └── models.py
+│   │
 │   ├── /backtester            # Backtester logic
 │   │   ├── main.py            # Runing the backtester
 │   │   ├── models.py          
 │   │   └── sequencer.py       # Logic for time and history candle symulation
+│   │
 │   ├── /binance               # Binance API communication layer
 │   │   ├── /stream
 │   │   │   ├── manager.py     # Stream connection manager & data storage interface
@@ -146,21 +179,54 @@ This is my **first major Python project**, and while fully functional, it may co
 │   │   │
 │   │   └── market.py          # Run function for data check and new data aquisition
 │   │
+│   ├── /Pyth                  # On chain historical kline data and stream
+│   │   ├── constants.py       
+│   │   ├── main.py            # Class and logger
+│   │   ├── manager.py         # Managing of REST api data and stream data monitoring
+│   │   ├── models.py         
+│   │   └── stream.py          # Class with thread and websocket connection for stream
+│   │
 │   ├── /settings              # General and strategy settings
 │   │   ├── changes.py         # Detects changes between old and new settings
+│   │   ├── credentials.py     # Credentials encryption
 │   │   ├── general.py         # General settings class
+│   │   ├── main.py            # Class declarations
 │   │   ├── strategy_convertors.py  # Dict <-> Dataclass converters
 │   │   └── strategies.py      # Strategy settings manager
 │   │
-│   ├── /strategy              # Main trading strategy logic
-│   │   ├── /assets            # Asset management
-│   │   │   ├── analyzer.py    # Asset analysis logic
-│   │   │   ├── manager.py     # Asset balance manager
+│   ├── /solana_api            # Solana chain integration
+│   │   │
+│   │   ├── /raydium           # Communication with Raydium
+│   │   │   ├── constants.py
+│   │   │   └── swap.py        # Transaction generation from Raydium
+│   │   │
+│   │   ├── /solana_tracker    # Unused data pooling
+│   │   │   ├── constants.py     
+│   │   │   └── fetch_kline.py
+│   │   │
+│   │   ├── /record_HL         # Last high/low tracking after trades
+│   │   │   ├── manager.py     # High/Low record manager
 │   │   │   └── models.py
 │   │   │
-│   │   ├── /fear_greed        # Fear & Greed index handling
-│   │   │   ├── fear_greed.py
-│   │   │   └── models.py
+│   │   ├── /tokens            # Managing on-chain token data [symbol, mint addres, decimals]
+│   │   │   ├── manager.py     # Adding new tokens storing so file,...
+│   │   │   ├── models.py
+│   │   │   └── token_data.py  # Fetching on-chain data of token 
+│   │   │
+│   │   ├── /utils
+│   │   │   ├── round.py       # Custom round function
+│   │   │   └── storage.py     # JSON storage utilities
+│   │   │
+│   │   ├── /wallet            # On-chain interactions 
+│   │   │   ├── balances.py    # Fetching wallet balances of stored tokens
+│   │   │   ├── executor.py    # Signing and sending transactions, reading transaction status
+│   │   │   └── models.py  
+│   │   │
+│   │   ├── constants.py        
+│   │   ├── main.py            # Class
+│   │   └── manager.py         # Managing wallet interaction sending trades reciving results. Main interaction point with the rest of the program.
+│   │
+│   ├── /strategy              # Main trading strategy logic
 │   │   │
 │   │   ├── /indicators        # Technical indicator computations
 │   │   │   ├── compute.py     # Indicator calculations (TA-Lib)
@@ -176,17 +242,30 @@ This is my **first major Python project**, and while fully functional, it may co
 │   │   │   ├── models.py
 │   │   │   └── storage.py     # CSV file operations for trades
 │   │   │
-│   │   ├── /utils
-│   │   │   └── storage.py     # JSON storage utilities
-│   │   │
 │   │   ├── dca.py             # Core DCA trading logic & trigger generation
 │   │   ├── models.py
+│   │   ├── utils.py
 │   │   └── run.py             # Strategy execution loop
 │   │
-│   ├── /telegram              # Telegram notification module
-│   │   └── telegram.py
+│   ├── /telegram              # Telegram application
+│   │   ├── main.py            # Class
+│   │   ├── on_message.py      # Function to proces recived cmd.
+│   │   ├── response_utils.py  # Generation of response messages on recived cmds.
+│   │   └── services.py        # Managing recived and send messages
 │   │
-│   └── constants.py           # Global constants
+│   ├── /utils
+│   │   └── storage.py         # JSON storage utilities
+│   │
+│   ├── /wallet                # Wallet managment
+│   │   ├── create.py          # Wallet creation and encryption.
+│   │   ├── evm.py             # Prepared for future
+│   │   ├── main.py            # Class
+│   │   ├── solana.py          # Solana wallet Keypair
+│   │   ├── utils.py           # Saving loading from .json, key deriviation.
+│   │   └── vault.py           # Mnemonic seed phrase decryption and managment.
+│   │
+│   ├── models.py          
+│   └── constants.py   
 │
 ├── /static                    # Frontend static files
 │   ├── /css                   # Stylesheets
@@ -201,88 +280,95 @@ This is my **first major Python project**, and while fully functional, it may co
 
 ```
 ## Modules Overview
-``/backtester``
-
+#### ``/backtester``
 * Run trough history data and execute trades for backtesting your strategy.
 
-``/binanceAPI``
+#### `/assets`
+* Manages account balances
+* ``analyzer.py`` Calculates available amount of assets.
 
+#### ``/binanceAPI``
 * ``/stream`` Manages Stream communication with Binance
-
 * ``/websocket`` Manages WebSocket communication with Binance
-
     * Sends trade orders
-
 * Performs reconnection logic
 
-
-``/flask``
-
+#### ``/flask``
 * ``routes.py`` All Flask UI routes
     * Serves /templates and /static
-
 * ``views.py`` Generate data for UI 
 
+#### `/marke_history`
+* `/fear_gread`
+    * Manages storage of Fear and Gread data
+    * Fetch new data from Alternative.me
 
-`/marke_history`
-* Loads/Saves kLine historical data
-* Manages kLine historical ``.csv`` files
-* Delivers kLine tables to other classes for computing
-* `run()` function takes care for data refresh
-    * Purges old data files
-    * request for new data
+* `/price`
+    * Loads/Saves kLine historical data
+    * Manages kLine historical ``.csv`` files
+    * Delivers kLine tables to other classes for computing
+    * `run()` function takes care for data refresh
+        * Purges old data files
+        * request for new data
+* `main.py`
+    * Two price classes exist here for Binance and Pyth
+    * Data updates are called from here.
+    * Asynch task is running here.
 
-``/settings``
+#### `/pyth`
+* `stream.py` manages stream connection internal class
+* `manager.py` Manages data for the rest of the program
 
-* ``general.py`` Loads/Saves general settings
- 
+
+#### ``/settings``
+* ``credentials.py`` Loads/Saves encrypted credentials
+* ``general.py`` Loads/Saves general settings 
 * ``strategies.py`` Loads/Saves strategy settings
     * Manages adding/removing strategies
-
 * Logs every change to settings
 * Delivers data from settings to other classes
     * list of IDs
     * list of all Interval used etc.
 
+#### ``/solana_api``
+* ``/raydium`` Interface for Raydium swap
+    * Transaction routing.
+    * Versioned transaction creation.
+* ``/tokens`` Manages onchain data for tokens. User has to create them using **mint** addres
+* ``/wallet`` Onchain execution Transaction signing,...
+* ``manager.py`` 
+    * Point of interaction with the rest of the program.
+    * Sending trades 
+    * Updating executed trades
 
-
-``/strategy``
-
+#### ``/strategy``
 * Core DCA strategy logic
-
-* `/assets`
-    * Manages account balances
-    * ``analyzer.py`` Calculates available amount of assets.
-
-
-* `/fear_gread`
-    * Manages storage of Fear and Gread data
-    * Fetch new data from Alternative.me
-
 * `/indicators`
     * Comput triggers and buy factor from indicators
-
 * `/record_JL`
     * Manages high and low value for each strategy for dip/pump trigger detection
     * Manages permanent storage to `.json`
-
 * `/trades`
     * Manages trade tables
     * Servs trades for execution
         * Update closed ones
     * Purges old data files
     * ``analyzer.py`` get PnL and other analyzes from trade tables.
-
 * ``dca.py``
     * Gathers all data and compute from other clases and generates a ``Trade``
     * Serves all trigger data for UI display.
-
 * ``run.py`` 
     * checks data availability
     * runs trough all strategiess
     * sends open ``Trade`` for execution
 
-``/telegram`` Sends message to bot
+#### ``/telegram`` 
+* Sends message
+* Recives commands
+
+#### ``/wallet`` 
+* Manages wallet encryption and decryption
+* ***Mnemonic phrase*** and ***Keypair*** only lives in RAM while program is running
 
 ---
 
@@ -327,7 +413,7 @@ The web interface allows you to:
 * Live status logs
 * Manage settings
 
-Username and password are configured in `settings.json`.
+Username and password are configured and encrypted `credentials.json`.
 
 ---
 
@@ -354,7 +440,7 @@ venv\Scripts\activate          # Windows
 pip install -r requirements.txt
 ```
 
-### 4. Configure API keys in `settings.json`
+### 4. Configure API keys in `credentials.json`
 Can be edited in Flask UI but require app restart to take effect
 ```
 "API_KEY": "YOUR_API_KEY",
@@ -427,29 +513,41 @@ python-telegram-bot
 
 # ⚙️ Configuration
 
+## Credentials
+```json
+{
+    "user": "$2b$12$7O8Zn.gPDu53xVPY.OG7sefrQQAmYAyIhFM7Liurb/VF7sEvnkjAW",
+    "password": "$2b$12$3y/1K720NyNseS2bhqMfIepHaA.PnptOjQ8hTdmLEoCAgE49m6BO2",
+    "B_API_KEY": "API_KEY",
+    "B_API_SECRET": "API_SECRET",
+    "telegram_TOKEN": "telegram_TOKEN",
+    "telegram_chatID": "telegram_chatID"
+}
+```
+
 ## Settings
 
 All settings can be changed in Flask UI
 
 ```json
+{
     "strategyUpdate": 11,
     "liveTradeAging": 600,
     "histDataUpdate": 300,
     "pingUpdate": 10,
+    "statusUpdate": 6,
     "websocetManageLoopRuntime": 1.0,
     "klineStreamLoopRuntime": 1.0,
-    "numOfHisCandles": 500,
-    "host": "localhost",
+    "numOfHisCandles": 700,
+    "host": "0.0.0.0",
     "Port": 5000,
-    "user": "robot",
-    "password": "1",
     "timeout": 10000,
     "reconnect_delay": 6,
-    "API_KEY": "API_KEY",
-    "API_SECRET": "API_SECRET",
-    "useTelegram": true,
-    "telegram_TOKEN": "TOKEN",
-    "telegram_chatID": "chatID"
+    "sol_slippage_bps": 10,
+    "sol_price_impact_lim": 0.1,
+    "sol_timeout": 10,
+    "useTelegram": true
+}
 ```
 
 ## Strategy Settings Example
@@ -458,7 +556,7 @@ All settings can be changed in Flask UI
 {
     "id": 5,
     "name": "LIVE setup v01.01",
-    "type": "AdvancedDCA",
+    "type": "Binance_CEX",
     "Symbol1": "BTC",
     "Symbol2": "USDC",
     "run": true,
@@ -531,18 +629,18 @@ Thank you for supporting open-source algorithmic trading tools! ❤️
 
 
 ---
-<a id="#version-12-notice--roadmap"></a>
+<a id="#version-20-notice--roadmap"></a>
 
-# 📌 Version 1.4 Notice & Roadmap
+# 📌 Version 2.0 Notice & Roadmap
 
-This is **Version 1.4**, my first full Python trading system. The python part is now full OOP.
+This is **Version 2.0**, updated for operation on-chain and on binance Exchange.
 
 ### Updates
 
-* Add charts
+* Add Solana chain
+* Add Pyth data pooling
+* telegram bot recieves commands
 * Improved web UI
-* Improved connection managment with Binance API
-* Built-in backtester
 
 ### Shorfalls 
 

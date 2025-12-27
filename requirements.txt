@@ -1,3 +1,4 @@
+python-dotenv
 flask
 flask_simplelogin
 binance-sdk-spot
@@ -5,3 +6,10 @@ numpy
 ta-lib
 fear-and-greed-crypto
 python-telegram-bot
+solana
+solders
+requests
+base58
+mnemonic
+cryptography
+bcrypt
