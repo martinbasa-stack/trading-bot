@@ -8,14 +8,11 @@
     "klineStreamLoopRuntime": 1.0,
     "numOfHisCandles": 700,
     "host": "0.0.0.0",
-    "user": "robot",
-    "password": "1",
     "Port": 5000,
     "timeout": 10000,
     "reconnect_delay": 6,
-    "API_KEY": "API_KEY",
-    "API_SECRET": "API_SECRET",
-    "useTelegram": true,
-    "telegram_TOKEN": "telegram_TOKEN",
-    "telegram_chatID": "telegram_chatID"
+    "sol_slippage_bps": 10,
+    "sol_price_impact_lim": 0.1,
+    "sol_timeout": 10,
+    "useTelegram": true
 }
