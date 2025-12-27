@@ -104,7 +104,8 @@ class TelegramService:
                 Event for shut down.
         """
         try:
-            self._shutdown = shutdown
+            self._configure_telegram_logging()
+            self._shutdown = shutdown            
             self._tasks.append(asyncio.create_task(self._run_app()))
             self._tasks.append(asyncio.create_task(self._send()))
 
@@ -210,5 +211,22 @@ class TelegramService:
             self._logger.error(f"handle_text error: {repr(e)}")
 
 
+    # Silence the telegram official logger
+    @staticmethod
+    def _configure_telegram_logging():
+        noisy_loggers = [
+            "telegram",
+            "telegram.ext",
+            "telegram.ext._utils.networkloop",
+            "telegram.ext._updater",
+            "telegram.request",
+            "httpx",
+            "httpcore",
+        ]
+
+        for name in noisy_loggers:
+            logger = logging.getLogger(name)
+            logger.setLevel(logging.WARNING)
+            logger.propagate = True   # keep routing to your handlers
 
 
