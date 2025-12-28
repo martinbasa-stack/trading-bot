@@ -1,0 +1,66 @@
+[
+    {
+        "mint": "So11111111111111111111111111111111111111112",
+        "decimals": 9,
+        "supply": 0,
+        "name": "Wrapped SOL",
+        "symbol": "SOL",
+        "uri": ""
+    },
+    {
+        "mint": "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+        "decimals": 6,
+        "supply": 11764769379795126,
+        "name": "USD Coin",
+        "symbol": "USDC",
+        "uri": ""
+    },
+    {
+        "mint": "J1toso1uCk3RLmjorhTtrVwY9HJ7X8V9yYac6Y7kGCPn",
+        "decimals": 9,
+        "supply": 11502632102079846,
+        "name": "Jito Staked SOL",
+        "symbol": "JitoSOL",
+        "uri": "https://storage.googleapis.com/token-metadata/JitoSOL.json"
+    },
+    {
+        "mint": "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
+        "decimals": 9,
+        "supply": 2617211191330732,
+        "name": "Marinade staked SOL (mSOL)",
+        "symbol": "mSOL",
+        "uri": ""
+    },
+    {
+        "mint": "4k3Dyjzvzp8eMZWUXbBCjEvwSkkk59S5iCNLY3QrkX6R",
+        "decimals": 6,
+        "supply": 554997855058314,
+        "name": "Raydium",
+        "symbol": "RAY",
+        "uri": ""
+    },
+    {
+        "mint": "KMNo3nJsBXfcpJTVhZcXLW7RmTwTt4GVFE7suUBo9sS",
+        "decimals": 6,
+        "supply": 9999960141518556,
+        "name": "Kamino",
+        "symbol": "KMNO",
+        "uri": "https://cdn.kamino.finance/kamino-metadata.json"
+    },
+    {
+        "mint": "HzwqbKZw8HxMN6bF2yFZNrht3c2iXXzpKcFu7uBEDKtr",
+        "decimals": 6,
+        "supply": 70020171897167,
+        "name": "EURC",
+        "symbol": "EURC",
+        "uri": "https://raw.githubusercontent.com/centrehq/centre-ecosystem/master/eurc/solana/metadata.json"
+    },
+    {
+        "mint": "JUPyiwrYJFskUPiHa7hkeR8VUtAeFoSYbKedZNsDvCN",
+        "decimals": 6,
+        "supply": 6863986014838785,
+        "name": "Jupiter",
+        "symbol": "JUP",
+        "uri": "https://static.jup.ag/jup/metadata.json"
+    }
+]
