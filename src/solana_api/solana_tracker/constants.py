@@ -1,0 +1,1 @@
+BASE_ST_URL= "https://data.solanatracker.io"
