@@ -1,6 +1,6 @@
 {
     "strategyUpdate": 11,
-    "liveTradeAging": 600,
+    "liveTradeAging": 120,
     "histDataUpdate": 300,
     "pingUpdate": 10,
     "statusUpdate": 6,
@@ -13,6 +13,10 @@
     "reconnect_delay": 6,
     "sol_slippage_bps": 10,
     "sol_price_impact_lim": 0.1,
-    "sol_timeout": 10,
-    "useTelegram": true
+    "sol_timeout": 15,
+    "evm_slippage_bps": 10,
+    "evm_price_impact_lim": 0.1,
+    "evm_timeout": 10,
+    "useTelegram": true,
+    "user": null
 }
