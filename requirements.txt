@@ -13,3 +13,11 @@ base58
 mnemonic
 cryptography
 bcrypt
+pystray
+pyinstaller
+pywin32
+bip32utils
+eth-account 
+eth-keys 
+eth-utils
+web3
