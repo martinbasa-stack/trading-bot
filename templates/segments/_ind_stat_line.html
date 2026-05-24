@@ -1,0 +1,45 @@
+<tr>
+    <td> {{ ind_id["idx"] }} </td> 
+    {%if ind_id["type"] == "AvrageCost" %} 
+    <td>Average Cost</td>
+    {%elif ind_id["type"] == "AvrageEntry" %} 
+    <td>Average Entry</td>
+    {%elif ind_id["type"] == "AvrageExit" %} 
+    <td>Average Exit</td>
+    {%elif ind_id["type"] == "F&G" %} 
+    <td>Fear & Gread</td>
+    {%else%}
+    <td>{{ ind_id["type"] }}</td>
+    {%endif%}
+    <td>{%if ind_id["value1"] > 0 %}
+        {{ ind_id["value1"] }}x {{ ind_id["interval"] }}
+        {%else%}
+        /
+        {%endif%}
+    </td>     
+    <td>
+        {{ ind_id["weight_result"] }} / {{ ind_id["weight_config"] }}
+    </td>                                   
+    {% if ind_id["enable_trade"] %}
+        <td class="green">ENABLED</td>
+    {%else%}
+        <td class="red">BLOCKED</td>
+    {%endif%}                                    
+    <td>
+        {{ ind_id["dis_text"] }} <br>
+        {{ ind_id["val_to_comare"] }}
+        {% if "Above" == ind_id["comparator"]  %} > {%else%} < {% endif %}
+        {{ ind_id["trigger_offset"] }}
+    </td>
+    <td>{{ ind_id["trigger"] }}</td>       
+    <td>{{ ind_id["delta"] }}</td> 
+    
+    {%if  ind_id["enable"] %}
+        <td> 
+    {%else%}
+        <td class="crossed"> X 
+    {%endif%}
+            {{ ind_id["factor"] }} % / {{ ind_id["factor_limit"] }} %
+        </td>        
+    <td> {{ ind_id["idx"] }} </td>                       
+</tr>

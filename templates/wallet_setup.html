@@ -1,0 +1,111 @@
+<html>
+    <head>       
+        <title>Basic settings</title>
+        {% include 'segments/_header.html' %}
+    </head>
+    <body>  
+        <div class="sidenav"> 
+            <div class="nav_top">
+                <div class="nav_box">
+                    <a class="button_side" href="{{ url_for('flaskRoute.display_logs') }}"> LOGS </a>
+                </div>
+                <div class="nav_box">
+                    <a class="button_side" href="{{ url_for('flaskRoute.solana_tokens') }}">SOL TOKENS</a>
+                </div>
+
+                <form action="/wallet_setup" method="post" onsubmit="return confirm('Do you want to generate new mnemonic phrase?');"> 
+                <button class="" type="submit" name="ActionButton" value="NEW" >NEW</button>
+                </form>
+            </div>
+            {% include 'segments/_nav_side.html' %}
+        </div>
+    <div class="wrapper">  
+        <header>
+            <div>
+             <b>WALLET SETUP</b>
+             <br>
+             {{usrMsg}}
+             </div>
+        </header>
+        <main>         
+        <div class="center-div">
+            <div class="center-div">   
+            <form action="/wallet_setup" method="post" onsubmit="return confirm('Create new wallet? \n Save your mnemonic phrase as it is impossible to recover!');">        
+            
+                <table border = "1">   
+                    <thead>
+                        <th colspan="2">New wallet and password</th>                        
+                    </thead>
+                    <tbody> 
+                        <tr>
+                            <td colspan="2">
+                                Password and mnemonic phrase are not recoverable for safety reasons!
+                            </td>
+                        </tr>
+
+                        <tr> 
+                            <td> 
+                                Password
+                            </td>
+                            <td>
+                                <input class="long" type="password" name="password" value = "" >
+                            </td>                           
+                        </tr>        
+                        <tr>
+                            <th colspan="2">                                 
+                                Mnemonic phrase                        
+                            </th>
+                        </tr>
+                                
+                        <tr>
+                            <td colspan="2">
+                                <input type="hidden" value="{{phrase}}" name="mnemo">                                 
+                                {{phrase}}
+                            </td>
+                        </tr>    
+                               
+                        <tr>
+                            <th colspan="2">                                 
+                                Custom mnemonic phrase! Use separate wallet for trading bot!                      
+                            </th>
+                        </tr>                                
+                        <tr>
+                            <td colspan="2">
+                                <input type="text" class="limitles" value="" name="mnemo_custom">     
+                            </td>
+                        </tr>                         
+                        <tr>
+                            <td colspan="2">                                 
+                                <button type="submit" class="rounded" name="ActionButton" value="CREATE" >CREATE</button>                         
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>               
+            </form>     
+                <table border = "1">   
+                    <thead>
+                        <th colspan="2">Wallet public addreses</th>                        
+                    </thead>
+                    <tbody> 
+                        <tr>
+                            <td colspan="2">
+                                Solana public address
+                            </td>
+                        </tr>
+                        <tr> 
+                            <td>                                                                
+                                {{solana_pub_key}}
+                            </td>                          
+                        </tr>
+                    </tbody>
+                </table>             
+            </div>
+            
+        </div> 
+        </main>
+        <footer>
+            {% include 'segments/_footer.html' %}     
+        </footer>
+    </div> 
+    </body>
+</html>

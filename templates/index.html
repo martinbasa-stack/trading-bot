@@ -1,0 +1,38 @@
+<html>
+    <head>
+        <title>ALOGO</title>
+        {% include 'segments/_header.html' %}
+    </head>
+    <body >
+        <div class="sidenav"> 
+            <div class="nav_top">
+            </div>
+        </div>
+        <div class="wrapper">  
+        <header>
+            <div>
+             <b>ALGO BOT</b>
+             </div>
+        </header>
+        <main>   
+            <canvas id="Matrix"></canvas>
+        </main>
+        <footer>
+            <form action="/wallet_unlock" method="post" onsubmit="return confirm('Do you want to unlock wallets?');">        
+
+                <table class="at-index" border = "0">   
+                    <td class="at-index" >Unlock wallet</td>   
+                    <td class="at-index">
+                        <input class="long" type="password" name="password" value = "" >
+                    </td >    
+                    <td class="at-index">                                 
+                        <button type="submit" class="rounded" name="ActionButton" value="UNLOCK" >UNLOCK</button>                         
+                    </td>
+                </table>               
+
+            </form>                  
+        </footer>
+    </div> 
+    <script src="{{ url_for('static', filename='js/index.js') }}"></script>  
+    </body>
+</html>

@@ -1,0 +1,60 @@
+<html>
+    <head>
+        <title>Trading bot</title>
+        {% include 'segments/_header.html' %}
+    </head>
+    <body>
+        <div class="sidenav"> 
+            <div class="nav_top">                          
+                {%for strategy in strategy_list %} 
+                    
+                    <button class="" id="nav_{{strategy.idx}}" value="{{strategy.idx}}" type="button">{{strategy.idx}} {{strategy.name}}</button>              
+                                
+                {% endfor %}
+            </div>
+            {% include 'segments/_nav_side.html' %}
+        </div>
+    <div class="wrapper">
+        <header>
+            <div>
+             <b>TRADE TABLES</b>
+             </div>
+        </header>
+        <main>  
+            <div class="center-column-div">
+            {%for strategyID in TradeTables %}      
+
+            {%if strategyID != "backtester" %}
+
+                <section id="{{strategyID}}">     
+                    <div>
+                        <hr class="custom-hr">   
+                        {% if TradeTables[strategyID]["paperTrading"] %}
+                        <h2> 
+                        {%else%}
+                        <h2 class="headLive"> 
+                        {%endif%}   
+                        Strategy {{strategyID}}: {{ TradeTables[strategyID]["name"] }}  
+                        </h2>
+                        
+                        <form action="/chart_trades" method="POST">
+                            <button type="submit" name="load_select" value="{{strategyID}}" class="rounded">CHART</button>
+                        </form>
+                    </div>               
+                    
+                    {% include 'segments/_trade_table.html' %} 
+                </section>       
+
+            {%endif%}
+
+            {% endfor %}
+            </div>
+        </main>
+        <footer>
+            {% include 'segments/_footer.html' %}    
+        </footer>
+    </div>
+    
+    <script src="{{ url_for('static', filename='js/scroll.js') }}"></script>
+    </body>
+</html>

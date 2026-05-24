@@ -1,0 +1,69 @@
+<table class="wrap" border = "1" id="buyTable{{strategy.id}}"> <!-- INDEX BUY table generation ______________________________________ -->
+    <thead>
+        <tr>
+            <th class="buyInd" colspan="7">Buy indicators</th>
+            <th>                                    
+                <button type="button"  value="AddIndexToBuy" id="add_buy_{{strategy.id}}">ADD</button>
+            </th>
+        </tr> 
+        <tr>
+            <td colspan="5">
+                Minimum weight for trade execution
+            </td>
+            <td >                                        
+                <input type="number"  min="0" step="1"  name="MinWeight_Buy" value = "{{ strategy.MinWeight_Buy }}" >   
+            </td>
+            <td></td>
+            <td></td>
+        </tr>  
+        <tr>
+            <th>Type</th>
+            <th>Ind. Input</th>
+            <th>Weight</th>
+            <th>Offset</th>
+            <th>Trigger logic</th>
+            <th>Factor</th>
+            <th>Max factor</th>
+            <th> </th>
+        </tr>                         
+    </thead>  
+    <tbody  id="buyBodyTable{{strategy.id}}">
+        <tr></tr>                                
+                                        
+        
+    </tbody>
+</table>    
+<table class="wrap" border = "1" id="sellTable{{strategy.id}}"> <!-- INDEX SELL table generation ______________________________________ -->
+    <thead>
+        <tr>
+            <th class="sellInd" colspan="7"> Sell indicators</th>                                
+            <th>                                    
+                <button type="button"  value="AddIndexToSell" id="add_sell_{{strategy.id}}">ADD</button>
+            </th>
+        </tr>
+        <tr>
+            <td colspan="5">
+                Minimum weight for trade execution
+            </td>
+            <td>                                        
+                <input type="number"  min="0" step="1"  name="MinWeight_Sell" value = "{{ strategy.MinWeight_Sell }}" >   
+            </td>
+            <td></td>
+            <td></td>
+        </tr>
+        <tr>
+            <th>Type</th>
+            <th>Ind. Input</th>
+            <th>Weight</th>
+            <th>Offset</th>
+            <th>Trigger logic</th>
+            <th>Factor</th>
+            <th>Max factor</th>
+            <th> </th>
+        </tr>
+    </thead>    
+    <tbody id="sellBodyTable{{strategy.id}}">
+        <tr></tr>                                
+        
+    </tbody>
+</table>
